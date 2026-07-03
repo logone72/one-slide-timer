@@ -1,0 +1,10 @@
+{
+  "name": "One Slide Timer",
+  "short_name": "One Timer",
+  "description": "Start parallel timers with one gesture.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#f8fafc",
+  "icons": []
+}

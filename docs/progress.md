@@ -2,6 +2,37 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-07-03 구현
+
+### 완료
+
+- Vite React TypeScript 앱 구조를 실제 파일로 생성했다.
+- `npm`, `.nvmrc` Node 24, `package-lock.json`, `package.json#engines.node`를 설정했다.
+- ESLint flat config, TypeScript strict, Prettier, Vitest, Playwright, Husky, lint-staged, commitlint를 설정했다.
+- `pre-commit` hook은 lint-staged, lint, typecheck, unit test를 실행하도록 만들었다.
+- `commit-msg` hook은 commitlint로 Conventional Commits를 검사하도록 만들었다.
+- `verify`, `verify:browser`, `cap:sync:ios`, `cap:open:ios` 스크립트를 추가했다.
+- `public/manifest.webmanifest`와 iOS 홈 화면 메타태그를 추가했다.
+- `platform/notifications` 경계를 만들고 브라우저 알림음, Capacitor Local Notifications 어댑터 자리를 마련했다.
+- DOM/CSS + Pointer Events 기반의 첫 시간 레일과 타이머 생성 흐름을 구현했다.
+- 타이머 레일 제스처 방향을 상하 기준으로 정했다. 아래가 0이고 위로 드래그할수록 시간이 길어진다.
+- 시간 계산, 10초 스냅, 시간 범위 clamp, 라벨 배치 단위 테스트를 추가했다.
+- Playwright 모바일 WebKit smoke 테스트를 추가했다.
+- Capacitor iOS 프로젝트를 연결해 `ios/`만 생성했다.
+
+### 검증
+
+- `npm run verify`: 통과.
+- `npm run verify:browser`: 통과.
+- `npm run cap:sync:ios`: 통과.
+- commitlint smoke: `feat: smoke test` 통과.
+- lint-staged smoke: staged 파일 없음 상태에서 정상 종료.
+
+### 참고
+
+- Node 24로 검증했다. 기본 shell의 Node 22에서는 `package.json#engines.node` 때문에 경고가 난다.
+- npm이 사용자 npm 설정의 `always-auth`, `email`, `NPM_TOKEN`, `msvs_version` 경고를 출력하지만 검증 실패 원인은 아니다.
+
 ## 2026-07-03
 
 ### 완료
