@@ -153,6 +153,7 @@ Apple 디자인 참고 문서의 핵심은 UI 장식이 뒤로 물러나고, 제
 - Playwright로 배포 전 browser smoke 검증
 - Husky, lint-staged, commitlint로 커밋 시점 품질 게이트 적용
 - Conventional Commits 형식 사용
+- `@/` 경로 별칭으로 `src/` 내부 import 정리
 - DOM/CSS와 Pointer Events로 시간 레일 구현
 - PWA manifest와 iOS 홈 화면 메타태그
 - 웹 배포를 먼저 만들고, 앱스토어 출시는 Capacitor iOS 앱으로 진행

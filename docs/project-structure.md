@@ -60,12 +60,12 @@ src/
       timerMath.ts
       timerMachine.ts
       timerStorage.ts
+      labelLayout.ts
 
   features/
     timer-rail/
       TimerRail.tsx
       timerRailGeometry.ts
-      labelLayout.ts
 
     settings/
       SettingsButton.tsx
@@ -99,6 +99,8 @@ src/
 - `platform/notifications/`: 브라우저 알림음과 나중의 Capacitor Local Notifications 연동 차이를 숨긴다.
 - `workers/`: Web Worker와 UI 사이의 메시지만 맡는다. 타이머의 진실은 항상 `endAt`이다.
 
+`src/` 내부를 가로지르는 import는 `@/` 경로 별칭을 쓴다. 같은 폴더 안의 작은 import는 `./`를 유지한다.
+
 `notificationPort.ts`는 `ensurePermission`, `scheduleTimer`, `cancelTimer`, `onNotificationAction`만 노출한다. 웹 MVP에서는 앱이 열린 동안 반복 알림음과 복귀 시 완료 처리만 구현하고, iOS 연결 후 `capacitorNotifications.ts`에 네이티브 예약 알림을 붙인다.
 
 ## UI 구현
@@ -128,19 +130,19 @@ src/
 
 ## 품질 게이트
 
-초기 스캐폴딩 때 다음 설정을 함께 둔다.
+현재 품질 게이트는 다음 설정을 기준으로 둔다.
 
 - ESLint flat config와 TypeScript strict 설정.
 - Prettier는 포맷만 맡기고, 코드 품질 판단은 ESLint와 TypeScript가 맡는다.
 - Husky `pre-commit` hook은 `lint-staged`, 전체 lint, typecheck, 테스트를 실행한다.
 - Husky `commit-msg` hook은 commitlint로 Conventional Commits를 검사한다.
-- lint-staged는 staged 파일에만 Prettier와 ESLint fix를 적용한다.
+- lint-staged는 staged 파일 전체에 Prettier를 적용하고, JS/TS 파일에만 ESLint fix를 적용한다.
 - 커밋 전 로컬 검증은 `verify` 스크립트를 사용한다.
 - 배포 전 브라우저 검증은 `verify:browser` 스크립트를 사용한다.
 
 커밋 타입은 처음에는 `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`만 허용한다. 타입을 늘리는 일은 실제 커밋 사례가 생긴 뒤에 한다.
 
-## 예상 스크립트
+## 현재 스크립트
 
 ```json
 {
@@ -150,7 +152,7 @@ src/
   "lint": "eslint . --max-warnings 0",
   "format": "prettier . --check",
   "format:write": "prettier . --write",
-  "typecheck": "tsc --noEmit",
+  "typecheck": "tsc -b",
   "test": "vitest run",
   "test:browser": "playwright test",
   "verify": "npm run lint && npm run format && npm run typecheck && npm run test",
@@ -160,16 +162,16 @@ src/
 }
 ```
 
-스크립트 이름은 실제 스캐폴딩 후 조정한다. 핵심은 웹 실행, 웹 빌드, 로컬 테스트, iOS 동기화가 한눈에 보여야 한다는 점이다.
+핵심은 웹 실행, 웹 빌드, 로컬 테스트, iOS 동기화가 한눈에 보여야 한다는 점이다.
 
-## 스캐폴딩 순서
+## 초기 스캐폴딩 기록
 
-1. 충돌 파일을 확인한 뒤 `npm create vite@latest . -- --template react-ts`로 시작한다.
-2. `.nvmrc`, `package.json#packageManager`, `package.json#engines.node`를 설정한다.
-3. ESLint, Prettier, Vitest, Playwright, Husky, lint-staged, commitlint를 붙인다.
-4. `manifest.webmanifest`와 iOS 홈 화면 메타태그를 추가한다.
-5. Vercel 프로젝트를 GitHub에 연결하고 Node 24로 설정한다.
-6. 웹 배포가 안정된 뒤 Capacitor iOS를 연결해 `ios/`를 만든다.
+1. Vite React TypeScript 기반 앱 구조를 만들었다.
+2. `.nvmrc`, `package.json#packageManager`, `package.json#engines.node`를 설정했다.
+3. ESLint, Prettier, Vitest, Playwright, Husky, lint-staged, commitlint를 붙였다.
+4. `manifest.webmanifest`와 iOS 홈 화면 메타태그를 추가했다.
+5. Capacitor iOS를 연결해 `ios/`를 만들었다.
+6. Vercel 프로젝트 연결과 Node 24 설정은 아직 남아 있다.
 
 ## 금지할 구조
 

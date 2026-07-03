@@ -13,6 +13,7 @@
 ## 제품 결정
 
 - 모바일 전용 웹앱이 기본이다. 데스크톱 최적화는 초기 범위가 아니다.
+- 카운트다운 레일은 상하 방향이다. 아래가 0이고 위로 갈수록 시간이 길어진다.
 - 하단 탭은 사용하지 않는다. 설정은 화면 구석의 설정 버튼으로 연다.
 - 타이머 시작은 한 번의 제스처로 끝나야 한다. 모달 입력과 별도 시작 버튼을 기본 흐름으로 만들지 않는다.
 - 시간 범위 기본값은 1시간이다. 설정 화면의 스테퍼로 1시간부터 24시간까지 정수 시간만 허용한다.
@@ -35,9 +36,11 @@
 - PWA는 첫 버전에서 manifest와 iOS 홈 화면 메타태그만 둔다. service worker와 offline cache는 만들지 않는다.
 - 모든 기능은 로컬에서 쉽게 확인할 수 있게 만든다. 순수 시간 계산은 작은 테스트로 남기고, UI 흐름은 로컬 실행에서 바로 만져볼 수 있어야 한다.
 - 코드 가독성을 우선한다. 단일 구현만 있는 추상화, 미래용 패키지 분리, 불필요한 모노레포 구조는 만들지 않는다.
+- `src/` 내부를 가로지르는 import는 `@/` 경로 별칭을 사용한다. 같은 폴더의 작은 import는 `./`를 유지한다.
 - lint는 경고 0개를 기준으로 실패시킨다. TypeScript strict, ESLint, Prettier, Vitest, Husky, lint-staged, commitlint를 품질 게이트로 둔다.
 - 커밋 메시지는 Conventional Commits 형식을 따른다. 기본 허용 타입은 `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`다.
 - Husky `pre-commit`에서는 staged 파일 정리, 전체 lint, typecheck, 테스트를 통과시킨다. Husky `commit-msg`에서는 commitlint를 통과시킨다.
+- lint-staged에서 Prettier는 staged 파일 전체에 적용하고, ESLint fix는 JS/TS 파일에만 적용한다.
 - Playwright browser smoke는 배포 전 검증으로만 둔다. 커밋마다 강제하지 않는다.
 
 ## Git 안전 규칙

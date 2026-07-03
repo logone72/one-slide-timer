@@ -20,6 +20,13 @@ npm run cap:sync:ios
 
 `verify`는 커밋 전 빠른 품질 게이트이고, `verify:browser`는 배포 전 모바일 브라우저 smoke 검증이다.
 
+## 현재 상태
+
+- Node 24와 npm 기준으로 동작한다.
+- 웹 앱은 Vite/React/TypeScript로 구성했다.
+- iOS 앱은 Capacitor로 연결했고, 첫 네이티브 폴더는 `ios/`만 둔다.
+- `@/` 경로 별칭은 `src/`를 가리킨다.
+
 ## 문서
 
 - [제품 스펙 및 개발 계획](docs/product-spec.md)

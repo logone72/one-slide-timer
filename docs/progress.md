@@ -2,6 +2,35 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-07-03 품질 정리
+
+### 완료
+
+- ESLint 규칙을 강화했다. import 정렬, 파일/함수 길이, 복잡도, 명시 boolean 조건, Promise 오용, 불필요한 타입 표현을 검사한다.
+- `src/` 내부 import에 `@/` 경로 별칭을 적용했다.
+- lint-staged에서 ESLint는 JS/TS 파일에만 적용하고, Prettier는 staged 파일 전체에 적용하도록 정리했다.
+- `main` 브랜치에 `feat: scaffold one slide timer app` 커밋을 만들고 `origin/main`으로 push했다.
+
+### 검증
+
+- `npm run verify`: 통과.
+- `npm run verify:browser`: 통과.
+- 커밋 훅의 lint, typecheck, unit test 통과.
+
+### 현재 구현 범위
+
+- 세로 카운트다운 레일에서 위로 드래그해 타이머를 만들 수 있다.
+- 여러 타이머를 동시에 실행할 수 있다.
+- 설정 버튼에서 시간 범위를 1시간부터 24시간까지 바꿀 수 있다.
+- 앱이 열린 동안 완료 알림음을 반복하고, 확인하면 완료된 타이머를 제거한다.
+
+### 아직 스펙만 있는 항목
+
+- 실행 중인 타이머 핀을 드래그해 시간을 다시 조정하는 흐름.
+- 타이머 핀 탭 후 작은 액션 UI를 띄우는 흐름.
+- 타이머 핀을 0 지점으로 드래그해 조기 종료하는 흐름.
+- iOS 네이티브 알림 예약과 실제 기기 알림 제약 검증.
+
 ## 2026-07-03 구현
 
 ### 완료
@@ -65,21 +94,10 @@
 - Vite React TypeScript 템플릿으로 스캐폴딩하기로 했다.
 - 앱 표시 이름은 `One Slide Timer`, bundle id는 `com.roegankim.oneslidetimer`로 정했다.
 
-### 다음 작업
-
-- Vite + React + TypeScript 기반 단일 앱 구조를 실제 프로젝트 파일로 스캐폴딩한다.
-- `.nvmrc`, `package.json#engines.node`, Vercel Node 설정을 `24`로 맞춘다.
-- ESLint, Prettier, TypeScript strict, Vitest, Playwright, Husky, lint-staged, commitlint를 설정한다.
-- PWA manifest와 iOS 홈 화면 메타태그를 추가한다.
-- 종료 시각 기반 카운트다운 모델을 구현한다.
-- Web Worker의 갱신 신호와 UI의 남은 시간 재계산 흐름을 검증한다.
-- 카운트다운 레일, 시작 핀, 미리보기 타이머를 구현한다.
-- 설정 버튼과 시간 범위 스테퍼를 구현한다.
-- 웹 배포 환경을 먼저 만든다.
-- Capacitor iOS 프로젝트를 연결한다.
-- iOS Local Notifications 연동과 모바일 브라우저 알림 제약을 실제 기기에서 확인한다.
-
 ### 남은 결정
 
+- 웹 배포 환경을 언제 연결할지.
+- 활성 타이머 핀 드래그 편집과 조기 종료 액션을 어떤 순서로 구현할지.
+- iOS Local Notifications 연동과 실제 기기 알림 제약을 언제 확인할지.
 - 알람 레일을 언제 추가할지.
 - 후속 타이머를 첫 버전 이후에 어떤 방식으로 설계할지.
