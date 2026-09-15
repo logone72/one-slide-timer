@@ -25,6 +25,7 @@ one-slide-timer/
   src/
   public/
     manifest.webmanifest
+    favicon.svg
   docs/
   tests/
     browser/
@@ -53,6 +54,8 @@ src/
   app/
     App.tsx
     appMachine.ts
+    useTimers.ts
+    useSettings.ts
 
   domain/
     timer/
@@ -65,11 +68,18 @@ src/
   features/
     timer-rail/
       TimerRail.tsx
+      TimerPin.tsx
+      RailDecorations.tsx
+      useRailGesture.ts
+      useTimerMotion.ts
+      timerRailKeyboard.ts
       timerRailGeometry.ts
 
     settings/
       SettingsButton.tsx
       SettingsPanel.tsx
+      RangeSettings.tsx
+      ThemeSettings.tsx
 
     completion-alert/
       CompletionAlert.tsx
@@ -86,6 +96,8 @@ src/
     timerWorkerClient.ts
 
   styles/
+    tokens.css
+    tokens.test.ts
     base.css
 ```
 
@@ -93,10 +105,11 @@ src/
 
 - `app/`: 앱 전체 상태와 화면 조립만 맡는다.
 - `domain/timer/`: 종료 시각, 남은 시간, 10초 스냅, 타이머 상태 전이를 맡는다. React를 모르게 둔다.
-- `features/timer-rail/`: 시간 레일, 핀 드래그, 라벨 충돌 회피를 맡는다.
-- `features/settings/`: 설정 버튼, 설정 화면, 시간 범위 스테퍼를 맡는다.
+- `features/timer-rail/`: 시간 레일, 핀 드래그, 라벨 충돌 회피를 맡는다. `useTimerMotion.ts`는 핀·라벨·연결선의 `transform` 보간과 동작 줄이기 설정을 처리한다.
+- `features/settings/`: 설정 버튼, 설정 화면, 시간 범위 스테퍼와 색상 테마 선택을 맡는다.
 - `features/completion-alert/`: 완료 알림 병합, 확인 흐름을 맡는다.
 - `platform/notifications/`: 브라우저 알림음과 나중의 Capacitor Local Notifications 연동 차이를 숨긴다.
+- `styles/`: 디자인 토큰과 화면 스타일을 맡는다. 토큰 원시 값은 `tokens.css`에만 선언한다.
 - `workers/`: Web Worker와 UI 사이의 메시지만 맡는다. 타이머의 진실은 항상 `endAt`이다.
 
 `src/` 내부를 가로지르는 import는 `@/` 경로 별칭을 쓴다. 같은 폴더 안의 작은 import는 `./`를 유지한다.
@@ -118,8 +131,8 @@ src/
 
 ## 테스트 기준
 
-- 시간 계산, 10초 스냅, 시간 범위 clamp, 라벨 충돌 회피는 작은 단위 테스트를 둔다.
-- Playwright browser smoke 테스트는 모바일 viewport에서 앱 표시와 레일 드래그로 타이머 1개 생성만 확인한다.
+- 시간 계산, 10초 스냅, 시간 범위 경계, 저장값 이전, 라벨 충돌 회피, 토큰 참조는 작은 단위 테스트를 둔다.
+- Playwright browser smoke 테스트는 Chromium과 모바일 WebKit에서 생성, 편집, 취소, 키보드 조정, 조기 종료, 설정, 완료 알림, PC 최대 너비와 라벨 겹침을 확인한다. 5분·55분·1시간·24시간 경계와 테마 저장·키보드 선택·타이머 글자 대비도 검증한다.
 - Playwright browser smoke는 커밋마다 강제하지 않고 배포 전 검증으로 둔다.
 - lint는 경고 0개를 기준으로 통과시킨다.
 - TypeScript는 strict 설정을 기본으로 둔다.

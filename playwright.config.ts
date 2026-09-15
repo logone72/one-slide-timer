@@ -17,6 +17,7 @@ export default defineConfig({
       process.env.CI === undefined || process.env.CI.length === 0,
   },
   projects: [
+    { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
     {
       name: "mobile-safari",
       use: { ...devices["iPhone 14"] },

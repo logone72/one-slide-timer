@@ -1,0 +1,298 @@
+/* 원시 값 → 의미 토큰 → 컴포넌트 토큰. 사용 지침: docs/design-tokens.md */
+
+:root,
+[data-theme="forest"] {
+  color-scheme: light;
+  --color-page: #e7ece8;
+  --color-surface: #fafbf7;
+  --color-surface-raised: #f0f3e9;
+  --color-text: #263b34;
+  --color-text-muted: #626f65;
+  --color-border: #dce4d4;
+  --color-accent: #436b45;
+  --color-accent-soft: #d4f3a7;
+  --color-on-accent: #3d5b36;
+  --color-accent-decoration: #9cbe76;
+  --color-rail-mark: #9ba88f;
+  --color-danger: #a35434;
+  --color-danger-soft: #f7dacb;
+  --color-timer-1: #216f5f;
+  --color-timer-2: #7252ab;
+  --color-timer-3: #96512a;
+  --color-timer-4: #2b6793;
+  --color-timer-5: #9a476a;
+}
+
+[data-theme="ocean"] {
+  color-scheme: light;
+  --color-page: #e3ecf4;
+  --color-surface: #f5f9fc;
+  --color-surface-raised: #eaf2f8;
+  --color-text: #233e51;
+  --color-text-muted: #5b7181;
+  --color-border: #d0dfeb;
+  --color-accent: #256989;
+  --color-accent-soft: #bee7fa;
+  --color-on-accent: #214e69;
+  --color-accent-decoration: #7bb8d8;
+  --color-rail-mark: #92abbc;
+  --color-danger: #a14d3f;
+  --color-danger-soft: #f7ddd5;
+  --color-timer-1: #1b6794;
+  --color-timer-2: #1a6d64;
+  --color-timer-3: #6e54a2;
+  --color-timer-4: #935029;
+  --color-timer-5: #99475c;
+}
+
+[data-theme="lavender"] {
+  color-scheme: light;
+  --color-page: #eae4f1;
+  --color-surface: #faf7fd;
+  --color-surface-raised: #f1eaf7;
+  --color-text: #40334e;
+  --color-text-muted: #73617f;
+  --color-border: #e2d5ed;
+  --color-accent: #785497;
+  --color-accent-soft: #e6d2fa;
+  --color-on-accent: #644179;
+  --color-accent-decoration: #b495cf;
+  --color-rail-mark: #b19cbc;
+  --color-danger: #a34c54;
+  --color-danger-soft: #f8dce2;
+  --color-timer-1: #74529a;
+  --color-timer-2: #93486d;
+  --color-timer-3: #356b63;
+  --color-timer-4: #90522b;
+  --color-timer-5: #4061a1;
+}
+
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --color-page: #10161e;
+  --color-surface: #19212b;
+  --color-surface-raised: #222e3d;
+  --color-text: #edf0f6;
+  --color-text-muted: #aab6c4;
+  --color-border: #3a495e;
+  --color-accent: #a9c4fa;
+  --color-accent-soft: #adc7ff;
+  --color-on-accent: #24354f;
+  --color-accent-decoration: #819dce;
+  --color-rail-mark: #6e829e;
+  --color-danger: #fac0ac;
+  --color-danger-soft: #583c3b;
+  --color-timer-1: #a6c8fc;
+  --color-timer-2: #9bd8c5;
+  --color-timer-3: #d0b2f0;
+  --color-timer-4: #e7be93;
+  --color-timer-5: #e7a9c4;
+}
+
+:root,
+[data-theme] {
+  --color-text-secondary: var(--color-text-muted);
+  --color-hover: color-mix(
+    in srgb,
+    var(--color-accent) 8%,
+    var(--color-surface)
+  );
+  --color-focus: var(--color-accent);
+  --color-primary: var(--color-text);
+  --color-on-primary: var(--color-surface);
+  --color-primary-hover: color-mix(
+    in srgb,
+    var(--color-primary) 85%,
+    var(--color-surface)
+  );
+  --color-on-primary-hover: color-mix(
+    in srgb,
+    var(--color-on-primary) 12%,
+    transparent
+  );
+  --color-start-hover: color-mix(
+    in srgb,
+    var(--color-accent-soft) 85%,
+    var(--color-accent)
+  );
+  --color-start-halo: color-mix(
+    in srgb,
+    var(--color-accent) 18%,
+    var(--color-surface)
+  );
+  --color-rail: color-mix(
+    in srgb,
+    var(--color-accent) 18%,
+    var(--color-surface)
+  );
+  --color-backdrop: color-mix(in srgb, var(--color-page) 65%, transparent);
+  --shadow-soft: 0 4px 16px
+    color-mix(in srgb, var(--color-text) 4%, transparent);
+  --shadow-floating: 0 8px 20px
+    color-mix(in srgb, var(--color-page) 60%, transparent);
+  --shadow-draft: 0 7px 25px
+    color-mix(in srgb, var(--color-text) 8%, transparent);
+  --shadow-dialog: 0 24px 100px
+    color-mix(in srgb, var(--color-page) 65%, transparent);
+  --shadow-shell:
+    0 24px 80px color-mix(in srgb, var(--color-text) 8%, transparent),
+    0 0 0 1px var(--color-border);
+  --shadow-start:
+    0 0 0 1px var(--color-border),
+    0 6px 16px color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-size-micro: 8px;
+  --font-size-caption: 10px;
+  --font-size-small: 11px;
+  --font-size-body: 12px;
+  --font-size-label: 13px;
+  --font-size-section: 14px;
+  --font-size-unit: 15px;
+  --font-size-brand: 21px;
+  --font-size-timer-compact: 22px;
+  --font-size-timer: 25px;
+  --font-size-dialog-title: 27px;
+  --font-size-draft: 29px;
+  --font-size-heading-compact: 30px;
+  --font-size-heading: 32px;
+  --font-size-hero: 34px;
+  --font-size-range: 62px;
+  --font-weight-light: 450;
+  --font-weight-medium: 550;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 650;
+  --line-height-solid: 1;
+  --line-height-tight: 1.1;
+  --line-height-heading: 1.25;
+  --line-height-body: 1.6;
+  --line-height-relaxed: 1.8;
+  --tracking-body: -0.25px;
+  --tracking-label: -0.4px;
+  --tracking-heading: -1px;
+  --tracking-hero: -1.8px;
+  --tracking-range: -3px;
+  --tracking-eyebrow: 1.6px;
+  --tracking-brand: 3px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-half: 2px;
+  --space-fine: 6px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-dialog: 25px;
+  --radius-shell: 30px;
+  --radius-round: 50%;
+  --border-thin: 1px;
+  --border-strong: 2px;
+  --focus-width: 3px;
+  --focus-offset: 5px;
+  --icon-xs: 12px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 28px;
+  --icon-stroke: 1.8;
+  --size-touch: 44px;
+  --size-stepper: 48px;
+  --size-button: 50px;
+  --size-completion-icon: 64px;
+  --size-status-dot: 5px;
+  --size-dot: 8px;
+  --app-min-width: 320px;
+  --app-max-width: 430px;
+  --app-max-height: 900px;
+  --app-inset-top: 26px;
+  --app-inset-inline: var(--space-7);
+  --app-inset-bottom: var(--space-5);
+  --app-desktop-gutter: 48px;
+  --dialog-max-width: 354px;
+  --dialog-gutter: 56px;
+  --dialog-list-max-height: 180px;
+  --rail-x: 31%;
+  --rail-min-height: 240px;
+  --rail-footer-space: 88px;
+  --rail-footer-space-compact: 72px;
+  --rail-width: 4px;
+  --rail-tick-offset: 17px;
+  --rail-major-offset: 24px;
+  --rail-tick-width: 6px;
+  --rail-major-width: 13px;
+  --rail-scale-width: 62px;
+  --rail-caption-offset: 44px;
+  --rail-caption-offset-compact: 37px;
+  --rail-label-height: 60px;
+  --rail-label-pitch: 68px;
+  --rail-bottom-clearance: 32px;
+  --rail-connector-width: 28px;
+  --rail-dot-size: 20px;
+  --rail-dot-border: 5px;
+  --rail-start-size: 58px;
+  --rail-start-halo: 8px;
+  --rail-draft-size: 40px;
+  --rail-draft-top-clearance: 32px;
+  --rail-draft-bottom-clearance: 54px;
+  --brand-bar-width: 5px;
+  --brand-bar-height: 20px;
+  --brand-bar-height-tall: 31px;
+  --brand-bar-height-short: 12px;
+  --brand-tilt: 16deg;
+  --theme-preview-height: 88px;
+  --theme-preview-rail-x: 25%;
+  --motion-fast: 150ms;
+  --motion-control: 180ms;
+  --motion-enter: 280ms;
+  --motion-reveal: 600ms;
+  --motion-bell: 2s;
+  --motion-breathe: 2.8s;
+  --motion-pulse: 3s;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: ease-in-out;
+  --motion-press-scale: 0.97;
+  --motion-alert-scale: 0.95;
+  --motion-pulse-from: 0.93;
+  --motion-pulse-to: 1.2;
+  --motion-bell-angle: 12deg;
+  --opacity-disabled: 0.3;
+  --opacity-muted: 0.45;
+  --opacity-dragging: 0.4;
+  --opacity-pulse: 0.65;
+  --layer-pin: 3;
+  --layer-start: 5;
+  --layer-draft: 6;
+  --layer-selected: 7;
+  --layer-actions: 8;
+}
+
+.timer-item,
+.timer-draft {
+  --timer-surface: color-mix(
+    in srgb,
+    var(--timer-color) 7%,
+    var(--color-surface)
+  );
+  --timer-border: color-mix(
+    in srgb,
+    var(--timer-color) 18%,
+    var(--color-surface)
+  );
+  --timer-hover: color-mix(
+    in srgb,
+    var(--timer-color) 13%,
+    var(--color-surface)
+  );
+  --timer-dot-border: color-mix(in srgb, var(--timer-color) 30%, transparent);
+  --timer-draft-halo: color-mix(in srgb, var(--timer-color) 12%, transparent);
+}

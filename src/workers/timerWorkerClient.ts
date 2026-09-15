@@ -1,3 +1,5 @@
+import { TIMER_TICK_MS } from "@/domain/timer/timerTypes";
+
 export type TimerTick = {
   type: "tick";
   now: number;
@@ -7,7 +9,7 @@ export function startTimerWorker(onTick: (now: number) => void): () => void {
   if (typeof Worker === "undefined") {
     const interval = window.setInterval(() => {
       onTick(Date.now());
-    }, 1_000);
+    }, TIMER_TICK_MS);
     return () => {
       window.clearInterval(interval);
     };

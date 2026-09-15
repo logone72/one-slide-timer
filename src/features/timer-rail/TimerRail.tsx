@@ -1,37 +1,33 @@
+import { MoveVertical } from "lucide-react";
 import {
   type CSSProperties,
-  type JSX,
-  type PointerEvent,
+  type RefObject,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 
+import { layoutLabels } from "@/domain/timer/labelLayout";
+import { durationMsToPercent, remainingMs } from "@/domain/timer/timerMath";
 import {
-  durationMsToPercent,
-  formatDuration,
-  remainingMs,
-} from "@/domain/timer/timerMath";
-import type {
-  AppSettings,
-  TimerDraft,
-  TimerRecord,
+  type AppSettings,
+  TIMER_COLORS,
+  TIMER_TICK_MS,
+  type TimerRecord,
 } from "@/domain/timer/timerTypes";
 
-import { getDurationFromPointer } from "./timerRailGeometry";
+import { RailDecorations } from "./RailDecorations";
+import { TimerPin } from "./TimerPin";
+import { useRailGesture } from "./useRailGesture";
+import type { TimerMotion } from "./useTimerMotion";
 
 type TimerRailProps = {
   timers: TimerRecord[];
   now: number;
   settings: AppSettings;
-  onCreateTimer: (durationMs: number) => void;
+  onCreateTimer: (durationMs: number, color: string) => void;
+  onUpdateTimer: (timerId: string, durationMs: number) => void;
   onDismissTimer: (timerId: string) => void;
-};
-
-const PREVIEW_COLOR = "#2563eb";
-
-type TimerPinStyle = CSSProperties & {
-  "--timer-bottom": string;
-  "--timer-color": string;
 };
 
 export function TimerRail({
@@ -39,148 +35,157 @@ export function TimerRail({
   now,
   settings,
   onCreateTimer,
+  onUpdateTimer,
   onDismissTimer,
 }: TimerRailProps) {
   const railRef = useRef<HTMLDivElement>(null);
-  const [draft, setDraft] = useState<TimerDraft | null>(null);
-
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
-    const rail = railRef.current?.getBoundingClientRect();
-
-    if (rail === undefined) {
-      return;
-    }
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDraft({
-      color: PREVIEW_COLOR,
-      durationMs: getDurationFromPointer(
-        event.clientY,
-        rail,
-        settings.rangeHours
-      ),
-    });
-  };
-
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
-    if (draft === null) {
-      return;
-    }
-
-    const rail = railRef.current?.getBoundingClientRect();
-
-    if (rail === undefined) {
-      return;
-    }
-
-    setDraft({
-      ...draft,
-      durationMs: getDurationFromPointer(
-        event.clientY,
-        rail,
-        settings.rangeHours
-      ),
-    });
-  };
-
-  const handlePointerUp = (): void => {
-    if (draft === null) {
-      return;
-    }
-
-    if (draft.durationMs > 0) {
-      onCreateTimer(draft.durationMs);
-    }
-
-    setDraft(null);
-  };
+  const color =
+    TIMER_COLORS[timers.length % TIMER_COLORS.length] ?? TIMER_COLORS[0];
+  const gesture = useRailGesture({
+    railRef,
+    timers,
+    rangeMinutes: settings.rangeMinutes,
+    color,
+    onCreateTimer,
+    onUpdateTimer,
+  });
+  const { height, motions } = useRailLayout(
+    railRef,
+    timers,
+    now,
+    settings.rangeMinutes
+  );
+  const draft = gesture.draft;
+  const ending = gesture.editing && draft?.durationMs === 0;
 
   return (
-    <section className="timer-stage" aria-label="Countdown timer rail">
+    <section
+      className={`timer-stage${draft !== null ? " timer-stage--dragging" : ""}${ending ? " timer-stage--ending" : ""}`}
+      aria-label="카운트다운 레일"
+    >
       <div
-        ref={railRef}
         className="timer-rail"
+        ref={railRef}
         data-testid="timer-rail"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={() => {
-          setDraft(null);
-        }}
+        style={
+          {
+            "--timer-count": timers.length,
+            "--rail-height": `${String(height)}px`,
+          } as CSSProperties
+        }
+        {...gesture.handlers}
       >
-        <button className="start-pin" type="button" aria-label="Start timer" />
+        <RailDecorations
+          draft={draft}
+          rangeMinutes={settings.rangeMinutes}
+          height={height}
+          empty={timers.length === 0}
+          ending={ending}
+        />
         {timers.map((timer) => (
           <TimerPin
             key={timer.id}
-            now={now}
-            rangeHours={settings.rangeHours}
             timer={timer}
-            onDismissTimer={onDismissTimer}
+            now={now}
+            motion={motions.get(timer.id)}
+            editing={draft?.timerId === timer.id}
+            selected={gesture.selectedId === timer.id}
+            onSelect={() => gesture.select(timer.id)}
+            onClose={gesture.cancel}
+            onDismiss={() => {
+              onDismissTimer(timer.id);
+              gesture.cancel();
+            }}
           />
         ))}
-        <DraftPin draft={draft} rangeHours={settings.rangeHours} />
       </div>
+      <p className="rail-help">
+        <MoveVertical className="icon icon-sm" />{" "}
+        {timers.length > 0
+          ? "타이머를 끌어 조정 · 탭해서 조기 종료"
+          : "끌어서 시간을 고르고, 놓으면 시작"}
+      </p>
+      <span id="gesture-help" className="sr-only">
+        위아래 화살표로 10초씩, Shift와 화살표로 1분씩 조정합니다. Enter로
+        확정하고 Escape로 취소합니다.
+      </span>
     </section>
   );
 }
 
-function TimerPin({
-  now,
-  onDismissTimer,
-  rangeHours,
-  timer,
-}: {
-  now: number;
-  onDismissTimer: (timerId: string) => void;
-  rangeHours: number;
-  timer: TimerRecord;
-}): JSX.Element {
-  const duration = remainingMs(timer.endAt, now);
-  const bottom = durationMsToPercent(duration, rangeHours);
-
-  return (
-    <button
-      className="timer-pin"
-      data-testid="timer-pin"
-      style={getTimerPinStyle(bottom, timer.color)}
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onDismissTimer(timer.id);
-      }}
-    >
-      <span>{formatDuration(duration)}</span>
-    </button>
+function useRailLayout(
+  railRef: RefObject<HTMLDivElement | null>,
+  timers: TimerRecord[],
+  now: number,
+  rangeMinutes: number
+) {
+  const [geometry, setGeometry] = useState({
+    height: 0,
+    pitch: 0,
+    clearance: 0,
+    connectorWidth: 0,
+  });
+  const { height, pitch, clearance, connectorWidth } = geometry;
+  useLayoutEffect(() => {
+    const rail = railRef.current;
+    const measure = (): void => {
+      if (rail !== null) {
+        const css = getComputedStyle(rail);
+        setGeometry({
+          height: rail.getBoundingClientRect().height,
+          connectorWidth: parseFloat(
+            css.getPropertyValue("--rail-connector-width")
+          ),
+          pitch: parseFloat(css.getPropertyValue("--rail-label-pitch")),
+          clearance: parseFloat(
+            css.getPropertyValue("--rail-bottom-clearance")
+          ),
+        });
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (rail !== null) {
+      observer.observe(rail);
+    }
+    return () => observer.disconnect();
+  }, [railRef]);
+  const current = positionsAt(now);
+  const next = positionsAt(now + TIMER_TICK_MS);
+  const motions = new Map(
+    timers.map((timer, index) => {
+      const motion: TimerMotion = {
+        current: {
+          pin: current.positions[index]?.position ?? 0,
+          label: current.labels.get(timer.id) ?? 0,
+        },
+        next: {
+          pin: next.positions[index]?.position ?? 0,
+          label: next.labels.get(timer.id) ?? 0,
+        },
+        connectorWidth,
+      };
+      return [timer.id, motion];
+    })
   );
-}
+  return { height, motions };
 
-function DraftPin({
-  draft,
-  rangeHours,
-}: {
-  draft: TimerDraft | null;
-  rangeHours: number;
-}): JSX.Element | null {
-  if (draft === null) {
-    return null;
+  function positionsAt(time: number) {
+    const positions = timers.map((timer) => ({
+      id: timer.id,
+      size: pitch,
+      position:
+        (1 -
+          durationMsToPercent(remainingMs(timer.endAt, time), rangeMinutes) /
+            100) *
+        height,
+    }));
+    const labels = new Map(
+      layoutLabels(positions, height - clearance).map((label) => [
+        label.id,
+        label.position + pitch / 2,
+      ])
+    );
+    return { positions, labels };
   }
-
-  return (
-    <div
-      className="timer-pin timer-pin--draft"
-      style={getTimerPinStyle(
-        durationMsToPercent(draft.durationMs, rangeHours),
-        draft.color
-      )}
-    >
-      <span>{formatDuration(draft.durationMs)}</span>
-    </div>
-  );
-}
-
-function getTimerPinStyle(bottom: number, color: string): TimerPinStyle {
-  return {
-    "--timer-bottom": `${String(bottom)}%`,
-    "--timer-color": color,
-  };
 }

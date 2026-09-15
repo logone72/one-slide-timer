@@ -2,6 +2,154 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-15 카운트다운 이동 최적화
+
+### 완료
+
+- 실행 중인 타이머 핀·시간 라벨·연결선의 위치 갱신을 `top`과 SVG 좌표에서 `transform`으로 바꿨다. 연결선은 고정 크기 요소의 이동과 기울기로 표현한다.
+- 워커의 1초 갱신 간격을 유지하면서 현재 위치부터 다음 1초의 위치까지 Web Animations API로 선형 보간한다. 매 프레임 JavaScript나 React 상태를 갱신하지 않는다.
+- 드래그 미리보기와 레일 채우기도 `translate3d`·`scaleY`를 사용한다. 드래그는 보간 지연 없이 즉시 반영하고, 라벨의 조기 종료 액션은 라벨과 함께 이동한다.
+- 위치를 다시 계산할 때 기존 애니메이션을 취소하고 현재 시각에 맞춰 시작한다. 첫 화면의 레일 측정은 페인트 전에 수행해 초기 위치에서 잘못된 타이머를 누르는 문제를 막았다.
+- 동작 줄이기 설정 변경을 구독해 실행 중인 보간도 취소한다. 장식 모션 토큰과 실제 시간의 흐름을 나타내는 갱신 간격의 역할을 문서에 구분했다.
+
+### 검증
+
+- `npm run verify`: lint 경고 0개, Prettier, TypeScript, 단위 테스트 10개 통과.
+- `npm run verify:browser`: 프로덕션 빌드와 Chromium·모바일 WebKit 테스트 24개 통과. 기존 드래그·취소·키보드·설정 검증에 프레임별 위치 변화와 동작 줄이기 전환 검증을 추가했다.
+- Chromium 390×844px, 5분 범위, 실행 중인 타이머 1개에서 1.2초 동안 관측한 73프레임의 위치가 모두 달라 연속 이동을 확인했다. 이동 요소의 `top`은 0px로 유지됐다.
+- 같은 조건의 약 5.5초 측정에서 기존 구현은 Layout 5회·Paint 20회, 변경 후 실제 화면은 Layout 5회·Paint 15회였다. 숫자 갱신의 렌더링 비용은 남아 있다.
+- 위치 이동만 분리하기 위해 별도 검증 페이지에서 시간 숫자를 숨긴 대조 측정은 5.54초 동안 Layout 0회·Paint 0회였다. 실제 제품에서는 숫자를 그대로 표시한다. 이 결과는 해당 Chromium 측정 조건에 한정하며 모든 기기의 성능을 보장하는 수치는 아니다.
+- 실제 iPhone 기기와 백그라운드·잠금 화면 알림은 이번 검증에 포함하지 않았다.
+
+### 변경 파일
+
+- `docs/design-tokens.md`
+- `docs/product-spec.md`
+- `docs/progress.md`
+- `docs/project-structure.md`
+- `src/domain/timer/timerTypes.ts`
+- `src/features/timer-rail/TimerRail.tsx`
+- `src/features/timer-rail/TimerPin.tsx`
+- `src/features/timer-rail/RailDecorations.tsx`
+- `src/features/timer-rail/useTimerMotion.ts`
+- `src/styles/base.css`
+- `src/styles/tokens.test.ts`
+- `src/workers/timerWorker.ts`
+- `src/workers/timerWorkerClient.ts`
+- `tests/browser/app-smoke.spec.ts`
+- `tests/browser/timer-motion.spec.ts`
+
+## 2026-09-15 분 단위 시간 범위와 색상 테마
+
+### 완료
+
+- 시간 범위를 5~~55분에서는 5분씩, 1~~24시간에서는 1시간씩 조절하도록 변경했다. 55분 ↔ 1시간 ↔ 2시간 경계를 양방향으로 연결한다.
+- 레일 눈금은 짧은 범위에서도 정확한 분·초를 표시한다. 타이머 자체의 10초 정밀도는 유지한다.
+- 포레스트·오션·라벤더·미드나이트 4개 색상 테마를 추가했다. 미리보기 카드를 누르면 전체 화면에 즉시 적용되며, 키보드 화살표로도 선택할 수 있다.
+- 배경, 타이머, 설정, 조기 종료, 완료 알림, 포커스, 호버, 그림자, 브라우저 색상까지 테마에 연결했다. 설정이 열리면 배경 스크롤을 잠근다.
+- 색상·간격·타이포그래피·모서리·크기·아이콘·그림자·모션을 `tokens.css`로 모았다. 레일 배치 계산도 토큰의 라벨 간격과 하단 여유를 읽는다.
+- 기존 시간 단위 저장값은 분 단위로 변환하고, 기존 타이머의 ID와 종료 시각을 유지한다. 초기 버전과 이전 디자인의 타이머 색상을 같은 순번의 테마 토큰으로 연결한다.
+- 설정과 테마는 다시 열어도 유지한다. 손상된 JSON이나 지원하지 않는 설정값은 안전한 기본값으로 읽는다.
+- 확장 규칙과 정적 자산·미디어 쿼리의 예외를 [디자인 토큰 문서](design-tokens.md)에 정리했다.
+
+### 검증
+
+- `npm run verify`: lint 경고 0개, Prettier, TypeScript, 단위 테스트 10개 통과.
+- `npm run verify:browser`: 프로덕션 빌드와 Chromium·모바일 WebKit 브라우저 테스트 22개 통과.
+- 5분 하한, 55분·1시간·2시간 전환, 24시간 상한, 저장값 이전, 기존 타이머 종료 시각 유지, 5분 레일에서 타이머 추가를 확인했다.
+- 4개 테마의 즉시 적용·재접속·라디오 키보드 조작·완료 알림을 확인했다. 각 테마의 5개 타이머 시간 표시는 실제 계산된 색상을 기준으로 4.5:1 이상의 대비를 검증했다.
+- 토큰 미정의 참조, 화면 스타일에 색상·고정 픽셀 값 재삽입을 검출하는 단위 검사를 추가했다.
+- 390×844px에서 4개 테마의 타이머·설정 화면을 캡처해 확인하고, 320×568px 설정 화면도 확인했다. 기존 PC 최대 너비·라벨 충돌·드래그 편집 검증도 통과했다.
+- 실제 iPhone 기기와 백그라운드·잠금 화면 알림은 이번 검증에 포함하지 않았다.
+
+### 변경 파일
+
+- `AGENTS.md`
+- `CONTEXT.md`
+- `docs/design-tokens.md`
+- `docs/product-spec.md`
+- `docs/progress.md`
+- `docs/project-structure.md`
+- `src/app/App.tsx`
+- `src/app/useSettings.ts`
+- `src/domain/timer/timerMath.ts`
+- `src/domain/timer/timerMath.test.ts`
+- `src/domain/timer/timerStorage.ts`
+- `src/domain/timer/timerStorage.test.ts`
+- `src/domain/timer/timerTypes.ts`
+- `src/features/completion-alert/CompletionAlert.tsx`
+- `src/features/settings/SettingsButton.tsx`
+- `src/features/settings/SettingsPanel.tsx`
+- `src/features/settings/RangeSettings.tsx`
+- `src/features/settings/ThemeSettings.tsx`
+- `src/features/timer-rail/RailDecorations.tsx`
+- `src/features/timer-rail/TimerPin.tsx`
+- `src/features/timer-rail/TimerRail.tsx`
+- `src/features/timer-rail/timerRailGeometry.ts`
+- `src/features/timer-rail/timerRailKeyboard.ts`
+- `src/features/timer-rail/useRailGesture.ts`
+- `src/styles/base.css`
+- `src/styles/tokens.css`
+- `src/styles/tokens.test.ts`
+- `tests/browser/app-smoke.spec.ts`
+- `tests/browser/settings.spec.ts`
+- `vitest.config.ts`
+
+## 2026-09-15 디자인과 타이머 제스처 개선
+
+### 완료
+
+- PC에서도 최대 430px인 모바일 앱을 가운데 표시하도록 수정했다.
+- 밝은 바탕, 민트색 시작 핀, 타이머별 색상 카드로 화면을 다시 구성했다. 레일에 0부터 설정한 시간까지 숫자 눈금과 보조 눈금을 추가했다.
+- 시작 핀, 미리보기 타이머, 실행 중인 타이머의 모양과 안내를 구분했다. 드래그 중에는 선택 시간과 시작·변경·조기 종료 안내를 보여준다.
+- 실행 중인 타이머의 핀 또는 라벨을 드래그하면 기존 ID와 색상을 유지하고 종료 시각만 변경한다. 탭하면 조기 종료 액션을 열고, 0으로 끌어 놓으면 조기 종료한다.
+- 카드가 가까우면 세로 간격을 확보하고 실제 레일 위치까지 연결선을 표시한다. 작은 화면에서도 카드와 시작 안내가 겹치지 않도록 공간을 확보했다.
+- 포인터 취소, Escape, 화면 이탈 시 편집을 취소한다. 키보드로 10초 또는 1분씩 조정하고 Enter로 확정할 수 있다.
+- 설정을 앱 전체를 차지하는 화면으로 변경했다. 1~24시간 스테퍼, 사용 안내, 설정 버튼으로의 초점 복귀를 구현했다.
+- 완료 알림을 확인할 때까지 유지되는 화면으로 다듬고, 완료된 타이머 목록을 합쳐 표시한다.
+- 화면 복귀 시 남은 시간을 재계산하며, 워커 신호를 받으면 UI에서 현재 시각을 읽는다.
+- 화면 전환, 시작 핀, 드래그 피드백과 완료 모션을 추가하고, 동작 줄이기 설정을 지원한다.
+
+### 검증
+
+- Node 24에서 `npm run verify`: lint 경고 0개, Prettier, TypeScript, 단위 테스트 7개 통과.
+- `npm run verify:browser`: 프로덕션 빌드와 Chromium·모바일 WebKit의 브라우저 테스트 10개 통과.
+- 생성, 기존 타이머 편집, 클릭 시 개수 유지, 조기 종료, 편집 취소, 키보드 조정, 설정 경계값, 종료 시각 유지, 재접속, 완료 목록과 확인 흐름을 검증했다.
+- 320·390·768·1440px 너비에서 최대 너비, 가로 넘침, 카드 간격을 확인했다. 높이 568px에서도 시작 안내와 카드가 겹치지 않는지 검증했다.
+- 별도 Chromium 세션의 CDP 터치 이벤트로 타이머 3개 생성, 기존 타이머 편집, 터치 취소, 시작 핀 단순 탭 시 생성되지 않는 동작을 확인했다.
+- 모바일·PC·설정·미리보기·완료 화면을 캡처해 배치를 확인했다. 추가 터치 검증 중 페이지 실행 오류는 없었다.
+- 실제 iPhone 기기와 백그라운드·잠금 화면 알림은 이번 검증에 포함하지 않았다.
+
+### 변경 파일
+
+- `CONTEXT.md`
+- `docs/product-spec.md`
+- `docs/progress.md`
+- `docs/project-structure.md`
+- `index.html`
+- `playwright.config.ts`
+- `public/favicon.svg`
+- `public/manifest.webmanifest`
+- `src/app/App.tsx`
+- `src/app/appMachine.ts`
+- `src/app/useTimers.ts`
+- `src/domain/timer/labelLayout.test.ts`
+- `src/domain/timer/labelLayout.ts`
+- `src/domain/timer/timerMath.test.ts`
+- `src/domain/timer/timerMath.ts`
+- `src/domain/timer/timerTypes.ts`
+- `src/features/completion-alert/CompletionAlert.tsx`
+- `src/features/settings/SettingsButton.tsx`
+- `src/features/settings/SettingsPanel.tsx`
+- `src/features/timer-rail/RailDecorations.tsx`
+- `src/features/timer-rail/TimerPin.tsx`
+- `src/features/timer-rail/TimerRail.tsx`
+- `src/features/timer-rail/timerRailGeometry.ts`
+- `src/features/timer-rail/timerRailKeyboard.ts`
+- `src/features/timer-rail/useRailGesture.ts`
+- `src/styles/base.css`
+- `tests/browser/app-smoke.spec.ts`
+
 ## 2026-07-03 품질 정리
 
 ### 완료

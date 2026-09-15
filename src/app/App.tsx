@@ -1,198 +1,80 @@
-import { useMachine } from "@xstate/react";
-import { type JSX, useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, AudioLines } from "lucide-react";
+import { useState } from "react";
 
-import {
-  clampRangeHours,
-  rangeHoursToMs,
-  remainingMs,
-} from "@/domain/timer/timerMath";
-import {
-  loadSettings,
-  loadTimers,
-  saveSettings,
-  saveTimers,
-} from "@/domain/timer/timerStorage";
-import {
-  type AppSettings,
-  DEFAULT_SETTINGS,
-  type TimerRecord,
-} from "@/domain/timer/timerTypes";
+import { formatTimeLabel, rangeMinutesToMs } from "@/domain/timer/timerMath";
 import { CompletionAlert } from "@/features/completion-alert/CompletionAlert";
 import { SettingsButton } from "@/features/settings/SettingsButton";
 import { SettingsPanel } from "@/features/settings/SettingsPanel";
 import { TimerRail } from "@/features/timer-rail/TimerRail";
-import { getNotificationPort } from "@/platform/notifications";
-import { startTimerWorker } from "@/workers/timerWorkerClient";
 
-import { appMachine } from "./appMachine";
-
-const COLORS = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed", "#ea580c"] as const;
-const notificationPort = getNotificationPort();
-
-type CreateTimerRecordInput = {
-  durationMs: number;
-  rangeHours: number;
-  timerCount: number;
-};
+import { useSettings } from "./useSettings";
+import { useTimers } from "./useTimers";
 
 export function App() {
-  const [, send] = useMachine(appMachine);
-  const [now, setNow] = useState(() => Date.now());
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
-  const [timers, setTimers] = useState<TimerRecord[]>(() =>
-    loadTimers().filter((timer) => timer.status !== "dismissed")
-  );
-
-  const runningTimers = useMemo(
-    () => timers.filter((timer) => remainingMs(timer.endAt, now) > 0),
-    [now, timers]
-  );
-  const completedTimers = useMemo(
-    () => timers.filter((timer) => remainingMs(timer.endAt, now) === 0),
-    [now, timers]
-  );
-
-  useEffect(() => {
-    return startTimerWorker(setNow);
-  }, []);
-
-  useEffect(() => {
-    saveTimers(timers);
-  }, [timers]);
-
-  useEffect(() => {
-    saveSettings(settings);
-  }, [settings]);
-
-  useEffect(() => {
-    if (completedTimers.length === 0) {
-      notificationPort.stopRepeatingAlert();
-    } else {
-      notificationPort.startRepeatingAlert();
-    }
-
-    return () => {
-      notificationPort.stopRepeatingAlert();
-    };
-  }, [completedTimers.length]);
-
-  const handleCreateTimer = (durationMs: number): void => {
-    void notificationPort.ensurePermission();
-
-    const timer = createTimerRecord({
-      durationMs,
-      rangeHours: settings.rangeHours,
-      timerCount: timers.length,
-    });
-
-    send({ type: "START_CREATING" });
-    setTimers((currentTimers) => [...currentTimers, timer]);
-    void notificationPort.scheduleTimer(timer);
-    send({ type: "FINISH" });
-  };
-
-  const handleDismissTimer = (timerId: string): void => {
-    setTimers((currentTimers) =>
-      currentTimers.filter((timer) => timer.id !== timerId)
-    );
-    void notificationPort.cancelTimer(timerId);
-  };
-
-  const handleAcknowledge = (): void => {
-    const completedIds = new Set(completedTimers.map((timer) => timer.id));
-    setTimers((currentTimers) =>
-      currentTimers.filter((timer) => !completedIds.has(timer.id))
-    );
-    notificationPort.stopRepeatingAlert();
-  };
+  const [settings, setSettings] = useSettings();
+  const timers = useTimers();
 
   return (
     <main className="app-shell">
-      <SettingsButton
-        onClick={() => {
-          setSettingsOpen(true);
-        }}
-      />
-      <AppHeader runningTimerCount={runningTimers.length} />
-      <TimerRail
-        timers={runningTimers}
-        now={now}
-        settings={settings}
-        onCreateTimer={handleCreateTimer}
-        onDismissTimer={handleDismissTimer}
-      />
+      <div className="timer-screen">
+        <header className="app-header">
+          <div className="wordmark" aria-label="One Slide Timer">
+            <span className="brand-mark" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span>
+              one slide<span className="wordmark__caption">TIMER</span>
+            </span>
+          </div>
+          <SettingsButton onClick={() => setSettingsOpen(true)} />
+        </header>
+        <section className="intro" aria-labelledby="page-title">
+          <div className="eyebrow">
+            MAKE ROOM FOR YOUR TIME <ArrowUpRight className="icon icon-sm" />
+          </div>
+          <h1 id="page-title">시간을, 가볍게.</h1>
+          <p>핀을 올리고 놓으면, 나만의 시간이 시작돼요.</p>
+        </section>
+        <div className="rail-heading">
+          <span
+            className={`activity-status${timers.runningTimers.length > 0 ? " activity-status--running" : ""}`}
+          >
+            <i />
+            {timers.runningTimers.length > 0
+              ? `${String(timers.runningTimers.length)}개의 타이머 진행 중`
+              : "시작할 준비가 됐어요"}
+          </span>
+          <span>
+            0 — {formatTimeLabel(rangeMinutesToMs(settings.rangeMinutes))}
+          </span>
+        </div>
+        <TimerRail
+          timers={timers.runningTimers}
+          now={timers.now}
+          settings={settings}
+          onCreateTimer={timers.createTimer}
+          onUpdateTimer={timers.updateTimer}
+          onDismissTimer={timers.dismissTimer}
+        />
+        <footer className="app-footer">
+          <AudioLines className="icon icon-sm" /> 시간이 끝나면, 소리로
+          알려드릴게요.
+        </footer>
+      </div>
+      {settingsOpen && (
+        <SettingsPanel
+          settings={settings}
+          onClose={() => setSettingsOpen(false)}
+          onChange={setSettings}
+        />
+      )}
       <CompletionAlert
-        completedTimers={completedTimers}
-        now={now}
-        onAcknowledge={handleAcknowledge}
-      />
-      <SettingsOverlay
-        isOpen={settingsOpen}
-        rangeHours={settings.rangeHours}
-        onClose={() => {
-          setSettingsOpen(false);
-        }}
-        onRangeHoursChange={(rangeHours) => {
-          setSettings({
-            ...DEFAULT_SETTINGS,
-            rangeHours: clampRangeHours(rangeHours),
-          });
-        }}
+        completedTimers={timers.completedTimers}
+        onAcknowledge={timers.acknowledge}
       />
     </main>
   );
-}
-
-function AppHeader({
-  runningTimerCount,
-}: {
-  runningTimerCount: number;
-}): JSX.Element {
-  return (
-    <header className="app-header">
-      <p>One Slide Timer</p>
-      <h1>{runningTimerCount} active timers</h1>
-    </header>
-  );
-}
-
-function SettingsOverlay({
-  isOpen,
-  onClose,
-  onRangeHoursChange,
-  rangeHours,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onRangeHoursChange: (rangeHours: number) => void;
-  rangeHours: number;
-}): JSX.Element | null {
-  if (!isOpen) {
-    return null;
-  }
-
-  return (
-    <SettingsPanel
-      rangeHours={rangeHours}
-      onClose={onClose}
-      onRangeHoursChange={onRangeHoursChange}
-    />
-  );
-}
-
-function createTimerRecord({
-  durationMs,
-  rangeHours,
-  timerCount,
-}: CreateTimerRecordInput): TimerRecord {
-  const createdAt = Date.now();
-
-  return {
-    id: crypto.randomUUID(),
-    color: COLORS[timerCount % COLORS.length] ?? COLORS[0],
-    createdAt,
-    endAt: createdAt + Math.min(durationMs, rangeHoursToMs(rangeHours)),
-    status: "running",
-  };
 }

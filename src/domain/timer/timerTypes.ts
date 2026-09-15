@@ -1,6 +1,28 @@
+export const TIMER_TICK_MS = 1_000;
 export const TIMER_STEP_MS = 10_000;
-export const DEFAULT_RANGE_HOURS = 1;
-export const MAX_RANGE_HOURS = 24;
+export const DEFAULT_RANGE_MINUTES = 60;
+export const MIN_RANGE_MINUTES = 5;
+export const MAX_RANGE_MINUTES = 24 * 60;
+export const TIMER_COLORS = [
+  "var(--color-timer-1)",
+  "var(--color-timer-2)",
+  "var(--color-timer-3)",
+  "var(--color-timer-4)",
+  "var(--color-timer-5)",
+] as const;
+
+export const THEMES = [
+  { id: "forest", name: "포레스트", description: "싱그럽고 편안하게" },
+  { id: "ocean", name: "오션", description: "맑고 시원하게" },
+  { id: "lavender", name: "라벤더", description: "부드럽고 차분하게" },
+  {
+    id: "midnight",
+    name: "미드나이트",
+    description: "어두운 곳에서도 편안하게",
+  },
+] as const;
+
+export type ThemeId = (typeof THEMES)[number]["id"];
 
 export type TimerStatus = "running" | "alerting" | "dismissed";
 
@@ -18,9 +40,11 @@ export type TimerDraft = {
 };
 
 export type AppSettings = {
-  rangeHours: number;
+  rangeMinutes: number;
+  theme: ThemeId;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  rangeHours: DEFAULT_RANGE_HOURS,
+  rangeMinutes: DEFAULT_RANGE_MINUTES,
+  theme: "forest",
 };

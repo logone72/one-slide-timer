@@ -1,18 +1,17 @@
-import { Settings } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
-type SettingsButtonProps = {
-  onClick: () => void;
-};
-
-export function SettingsButton({ onClick }: SettingsButtonProps) {
+export function SettingsButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      aria-label="Open settings"
-      className="settings-button"
+      aria-label="설정 열기"
+      className="settings-button icon-button"
       type="button"
-      onClick={onClick}
+      onClick={(event) => {
+        event.currentTarget.focus();
+        onClick();
+      }}
     >
-      <Settings aria-hidden="true" size={22} strokeWidth={2} />
+      <SlidersHorizontal aria-hidden="true" className="icon" />
     </button>
   );
 }

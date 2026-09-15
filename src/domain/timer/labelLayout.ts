@@ -1,26 +1,24 @@
-export type LabelInput = {
-  id: string;
-  position: number;
-  size: number;
-};
+export type LabelInput = { id: string; position: number; size: number };
 
-export type LabelLayout = LabelInput & {
-  lane: number;
-};
-
-export function layoutLabels(labels: LabelInput[]): LabelLayout[] {
-  const laneEnds: number[] = [];
-
-  return [...labels]
+export function layoutLabels(
+  labels: LabelInput[],
+  height: number
+): LabelInput[] {
+  let edge = 0;
+  const placed = [...labels]
     .sort((a, b) => a.position - b.position)
     .map((label) => {
-      const lane = laneEnds.findIndex((end) => end <= label.position);
-      const nextLane = lane === -1 ? laneEnds.length : lane;
-      laneEnds[nextLane] = label.position + label.size;
-
-      return {
-        ...label,
-        lane: nextLane,
-      };
+      const position = Math.max(edge, label.position - label.size / 2);
+      edge = position + label.size;
+      return { ...label, position };
     });
+  edge = height;
+  for (let index = placed.length - 1; index >= 0; index -= 1) {
+    const label = placed[index];
+    if (label !== undefined) {
+      label.position = Math.min(label.position, edge - label.size);
+      edge = label.position;
+    }
+  }
+  return placed;
 }
