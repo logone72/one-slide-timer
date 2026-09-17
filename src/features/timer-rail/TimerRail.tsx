@@ -1,25 +1,16 @@
-import { MoveVertical } from "lucide-react";
-import {
-  type CSSProperties,
-  type RefObject,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
-import { layoutLabels } from "@/domain/timer/labelLayout";
-import { durationMsToPercent, remainingMs } from "@/domain/timer/timerMath";
 import {
   type AppSettings,
   TIMER_COLORS,
-  TIMER_TICK_MS,
   type TimerRecord,
 } from "@/domain/timer/timerTypes";
 
-import { RailDecorations } from "./RailDecorations";
+import { RailDecorations, RailHelp } from "./RailDecorations";
+import { TimerAdjustment } from "./TimerAdjustment";
 import { TimerPin } from "./TimerPin";
 import { useRailGesture } from "./useRailGesture";
-import type { TimerMotion } from "./useTimerMotion";
+import { useRailLayout } from "./useRailLayout";
 
 type TimerRailProps = {
   timers: TimerRecord[];
@@ -38,6 +29,7 @@ export function TimerRail({
   onUpdateTimer,
   onDismissTimer,
 }: TimerRailProps) {
+  const [adjusting, setAdjusting] = useState<string | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const color =
     TIMER_COLORS[timers.length % TIMER_COLORS.length] ?? TIMER_COLORS[0];
@@ -48,8 +40,9 @@ export function TimerRail({
     color,
     onCreateTimer,
     onUpdateTimer,
+    onStartAdjust: () => setAdjusting("new"),
   });
-  const { height, motions } = useRailLayout(
+  const { height, motions, pitch } = useRailLayout(
     railRef,
     timers,
     now,
@@ -70,6 +63,7 @@ export function TimerRail({
         style={
           {
             "--timer-count": timers.length,
+            "--rail-label-pitch": `${String(pitch)}px`,
             "--rail-height": `${String(height)}px`,
           } as CSSProperties
         }
@@ -81,6 +75,10 @@ export function TimerRail({
           height={height}
           empty={timers.length === 0}
           ending={ending}
+          onStartAdjust={() => {
+            gesture.cancel();
+            setAdjusting("new");
+          }}
         />
         {timers.map((timer) => (
           <TimerPin
@@ -92,6 +90,10 @@ export function TimerRail({
             selected={gesture.selectedId === timer.id}
             onSelect={() => gesture.select(timer.id)}
             onClose={gesture.cancel}
+            onAdjust={() => {
+              setAdjusting(timer.id);
+              gesture.cancel();
+            }}
             onDismiss={() => {
               onDismissTimer(timer.id);
               gesture.cancel();
@@ -99,93 +101,21 @@ export function TimerRail({
           />
         ))}
       </div>
-      <p className="rail-help">
-        <MoveVertical className="icon icon-sm" />{" "}
-        {timers.length > 0
-          ? "타이머를 끌어 조정 · 탭해서 조기 종료"
-          : "끌어서 시간을 고르고, 놓으면 시작"}
-      </p>
-      <span id="gesture-help" className="sr-only">
-        위아래 화살표로 10초씩, Shift와 화살표로 1분씩 조정합니다. Enter로
-        확정하고 Escape로 취소합니다.
-      </span>
+      <TimerAdjustment
+        timerId={adjusting}
+        timers={timers}
+        rangeMinutes={settings.rangeMinutes}
+        onClose={() => setAdjusting(null)}
+        onApply={(duration) => {
+          if (adjusting === "new") {
+            onCreateTimer(duration, color);
+          } else if (adjusting !== null) {
+            onUpdateTimer(adjusting, duration);
+          }
+          setAdjusting(null);
+        }}
+      />
+      <RailHelp running={timers.length > 0} />
     </section>
   );
-}
-
-function useRailLayout(
-  railRef: RefObject<HTMLDivElement | null>,
-  timers: TimerRecord[],
-  now: number,
-  rangeMinutes: number
-) {
-  const [geometry, setGeometry] = useState({
-    height: 0,
-    pitch: 0,
-    clearance: 0,
-    connectorWidth: 0,
-  });
-  const { height, pitch, clearance, connectorWidth } = geometry;
-  useLayoutEffect(() => {
-    const rail = railRef.current;
-    const measure = (): void => {
-      if (rail !== null) {
-        const css = getComputedStyle(rail);
-        setGeometry({
-          height: rail.getBoundingClientRect().height,
-          connectorWidth: parseFloat(
-            css.getPropertyValue("--rail-connector-width")
-          ),
-          pitch: parseFloat(css.getPropertyValue("--rail-label-pitch")),
-          clearance: parseFloat(
-            css.getPropertyValue("--rail-bottom-clearance")
-          ),
-        });
-      }
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    if (rail !== null) {
-      observer.observe(rail);
-    }
-    return () => observer.disconnect();
-  }, [railRef]);
-  const current = positionsAt(now);
-  const next = positionsAt(now + TIMER_TICK_MS);
-  const motions = new Map(
-    timers.map((timer, index) => {
-      const motion: TimerMotion = {
-        current: {
-          pin: current.positions[index]?.position ?? 0,
-          label: current.labels.get(timer.id) ?? 0,
-        },
-        next: {
-          pin: next.positions[index]?.position ?? 0,
-          label: next.labels.get(timer.id) ?? 0,
-        },
-        connectorWidth,
-      };
-      return [timer.id, motion];
-    })
-  );
-  return { height, motions };
-
-  function positionsAt(time: number) {
-    const positions = timers.map((timer) => ({
-      id: timer.id,
-      size: pitch,
-      position:
-        (1 -
-          durationMsToPercent(remainingMs(timer.endAt, time), rangeMinutes) /
-            100) *
-        height,
-    }));
-    const labels = new Map(
-      layoutLabels(positions, height - clearance).map((label) => [
-        label.id,
-        label.position + pitch / 2,
-      ])
-    );
-    return { positions, labels };
-  }
 }

@@ -16,12 +16,14 @@ export function RailDecorations({
   height,
   empty,
   ending,
+  onStartAdjust,
 }: {
   draft: RailGesture | null;
   rangeMinutes: number;
   height: number;
   empty: boolean;
   ending: boolean;
+  onStartAdjust: () => void;
 }) {
   return (
     <>
@@ -42,6 +44,11 @@ export function RailDecorations({
         type="button"
         aria-label="새 타이머 시작"
         aria-describedby="gesture-help"
+        onClick={(event) => {
+          if (event.detail === 0) {
+            onStartAdjust();
+          }
+        }}
       >
         <ArrowUp className="icon icon-xl" />
       </button>
@@ -118,5 +125,22 @@ function RailScale({ rangeMinutes }: { rangeMinutes: number }) {
         );
       })}
     </div>
+  );
+}
+
+export function RailHelp({ running }: { running: boolean }) {
+  return (
+    <>
+      <p className="rail-help">
+        <MoveVertical className="icon icon-sm" />{" "}
+        {running
+          ? "타이머를 끌거나 탭해서 조정"
+          : "끌어서 시작 · 탭해서 시간 선택"}
+      </p>
+      <span id="gesture-help" className="sr-only">
+        위아래 화살표로 10초씩, Shift와 화살표로 1분씩 조정합니다. Enter로
+        확정하고 Escape로 취소합니다.
+      </span>
+    </>
   );
 }

@@ -34,14 +34,11 @@ export const THEMES = [
 
 export type ThemeId = (typeof THEMES)[number]["id"];
 
-export type TimerStatus = "running" | "alerting" | "dismissed";
-
 export type TimerRecord = {
   id: string;
   color: string;
   createdAt: number;
   endAt: number;
-  status: TimerStatus;
 };
 
 export type TimerDraft = {

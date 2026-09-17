@@ -1,7 +1,6 @@
 import {
   DEFAULT_RANGE_MINUTES,
-  MAX_RANGE_MINUTES,
-  MIN_RANGE_MINUTES,
+  RANGE_MINUTE_OPTIONS,
   TIMER_STEP_MS,
 } from "./timerTypes";
 
@@ -15,19 +14,16 @@ export function clampRangeMinutes(minutes: number): number {
   if (!Number.isFinite(minutes)) {
     return DEFAULT_RANGE_MINUTES;
   }
-  const step = minutes < 60 ? MIN_RANGE_MINUTES : 60;
-  return clamp(
-    Math.round(minutes / step) * step,
-    MIN_RANGE_MINUTES,
-    MAX_RANGE_MINUTES
+  return RANGE_MINUTE_OPTIONS.reduce((nearest, option) =>
+    Math.abs(option - minutes) <= Math.abs(nearest - minutes) ? option : nearest
   );
 }
 
 export function stepRangeMinutes(minutes: number, direction: -1 | 1): number {
   const current = clampRangeMinutes(minutes);
-  const hourly = direction === 1 ? current >= 60 : current > 60;
-  return clampRangeMinutes(
-    current + direction * (hourly ? 60 : MIN_RANGE_MINUTES)
+  return (
+    RANGE_MINUTE_OPTIONS[RANGE_MINUTE_OPTIONS.indexOf(current) + direction] ??
+    current
   );
 }
 

@@ -11,6 +11,7 @@ import {
   stepRangeMinutes,
   yToDurationMs,
 } from "./timerMath";
+import { RANGE_MINUTE_OPTIONS } from "./timerTypes";
 
 describe("timer math", () => {
   it("normalizes minute ranges and steps through the hour boundary", () => {
@@ -27,6 +28,15 @@ describe("timer math", () => {
     expect(stepRangeMinutes(60, 1)).toBe(120);
     expect(stepRangeMinutes(120, -1)).toBe(60);
     expect(stepRangeMinutes(720, 1)).toBe(720);
+    RANGE_MINUTE_OPTIONS.forEach((minutes, index) => {
+      expect(clampRangeMinutes(minutes)).toBe(minutes);
+      expect(stepRangeMinutes(minutes, 1)).toBe(
+        RANGE_MINUTE_OPTIONS[index + 1] ?? minutes
+      );
+      expect(stepRangeMinutes(minutes, -1)).toBe(
+        RANGE_MINUTE_OPTIONS[index - 1] ?? minutes
+      );
+    });
   });
 
   it("snaps duration to 10 second units", () => {

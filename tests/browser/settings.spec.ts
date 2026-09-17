@@ -7,6 +7,7 @@ const TIMERS_KEY = "one-slide-timer:timers";
 test("migrates hours and steps in minutes without changing a running deadline", async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date());
   const endAt = Date.now() + 1_800_000;
   await page.addInitScript((deadline) => {
     if (localStorage.getItem("one-slide-timer:settings") !== null) {

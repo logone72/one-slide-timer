@@ -2,10 +2,7 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 
 import type { TimerRecord } from "@/domain/timer/timerTypes";
 
-import { browserNotifications } from "./browserNotifications";
-import type { NotificationAction, NotificationPort } from "./notificationPort";
-
-const listeners = new Set<(action: NotificationAction) => void>();
+import type { NotificationPort } from "./notificationPort";
 
 export const capacitorNotifications: NotificationPort = {
   async ensurePermission() {
@@ -15,6 +12,9 @@ export const capacitorNotifications: NotificationPort = {
       return true;
     }
 
+    if (current.display === "denied") {
+      return false;
+    }
     const requested = await LocalNotifications.requestPermissions();
     return requested.display === "granted";
   },
@@ -23,8 +23,8 @@ export const capacitorNotifications: NotificationPort = {
       notifications: [
         {
           id: toNotificationId(timer.id),
-          title: "Timer complete",
-          body: "A timer has finished.",
+          title: "시간이 되었어요",
+          body: "앱에서 완료한 타이머를 확인하세요.",
           schedule: { at: new Date(timer.endAt) },
           extra: { timerId: timer.id },
         },
@@ -36,29 +36,33 @@ export const capacitorNotifications: NotificationPort = {
       notifications: [{ id: toNotificationId(timerId) }],
     });
   },
-  startRepeatingAlert: browserNotifications.startRepeatingAlert,
-  stopRepeatingAlert: browserNotifications.stopRepeatingAlert,
-  onNotificationAction(listener) {
-    listeners.add(listener);
-
-    const subscriptionPromise = LocalNotifications.addListener(
+  onNotificationAction(listener, onFailure) {
+    let disposed = false;
+    let remove: (() => Promise<void>) | undefined;
+    void LocalNotifications.addListener(
       "localNotificationActionPerformed",
       (event) => {
-        const extra: unknown = event.notification.extra;
-
-        if (!isTimerNotificationExtra(extra)) {
-          return;
-        }
-
-        for (const currentListener of listeners) {
-          currentListener({ type: "acknowledge", timerId: extra.timerId });
+        if (!disposed && isTimerNotificationExtra(event.notification.extra)) {
+          listener();
         }
       }
-    );
-
+    )
+      .then((handle) => {
+        if (disposed) {
+          void handle.remove().catch(onFailure);
+        } else {
+          remove = () => handle.remove();
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          onFailure();
+        }
+      });
     return () => {
-      listeners.delete(listener);
-      void subscriptionPromise.then((subscription) => subscription.remove());
+      disposed = true;
+      void remove?.().catch(onFailure);
+      remove = undefined;
     };
   },
 };

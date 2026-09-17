@@ -1,29 +1,36 @@
 import { TIMER_TICK_MS } from "@/domain/timer/timerTypes";
 
-export type TimerTick = {
-  type: "tick";
-  now: number;
-};
-
-export function startTimerWorker(onTick: (now: number) => void): () => void {
-  if (typeof Worker === "undefined") {
-    const interval = window.setInterval(() => {
-      onTick(Date.now());
-    }, TIMER_TICK_MS);
-    return () => {
-      window.clearInterval(interval);
-    };
+export function startTimerWorker(onTick: () => void): () => void {
+  let worker: Worker | undefined;
+  let interval: number | undefined;
+  let disposed = false;
+  const stopWorker = (): void => {
+    worker?.removeEventListener("message", onTick);
+    worker?.removeEventListener("error", fallback);
+    worker?.removeEventListener("messageerror", fallback);
+    worker?.terminate();
+    worker = undefined;
+  };
+  const fallback = (): void => {
+    if (disposed) {
+      return;
+    }
+    stopWorker();
+    interval ??= window.setInterval(onTick, TIMER_TICK_MS);
+  };
+  try {
+    worker = new Worker(new URL("./timerWorker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.addEventListener("message", onTick);
+    worker.addEventListener("error", fallback);
+    worker.addEventListener("messageerror", fallback);
+  } catch {
+    fallback();
   }
-
-  const worker = new Worker(new URL("./timerWorker.ts", import.meta.url), {
-    type: "module",
-  });
-
-  worker.addEventListener("message", (event: MessageEvent<TimerTick>) => {
-    onTick(event.data.now);
-  });
-
   return () => {
-    worker.terminate();
+    disposed = true;
+    stopWorker();
+    window.clearInterval(interval);
   };
 }

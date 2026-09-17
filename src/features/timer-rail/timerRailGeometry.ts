@@ -1,7 +1,3 @@
-import type { RefObject } from "react";
-import type { ActorRefFrom } from "xstate";
-
-import type { appMachine } from "@/app/appMachine";
 import {
   clamp,
   rangeMinutesToMs,
@@ -18,20 +14,10 @@ export type RailGesture = TimerDraft & {
   startDuration: number;
   moved: boolean;
 };
-export type RailActor = ActorRefFrom<typeof appMachine>;
-export type RailOptions = {
-  railRef: RefObject<HTMLDivElement | null>;
-  timers: TimerRecord[];
-  rangeMinutes: number;
-  color: string;
-  onCreateTimer: (durationMs: number, color: string) => void;
-  onUpdateTimer: (timerId: string, durationMs: number) => void;
-};
-
 export function getGestureDuration(
   gesture: RailGesture,
   clientY: number,
-  rail: DOMRect,
+  rail: Pick<DOMRect, "top" | "bottom" | "height">,
   rangeMinutes: number
 ): number {
   if (gesture.timerId === null) {
@@ -49,10 +35,10 @@ export function getGestureDuration(
 
 export function createGesture(
   timer: TimerRecord | undefined,
-  color: string
+  color: string,
+  now: number
 ): RailGesture {
-  const durationMs =
-    timer === undefined ? 0 : remainingMs(timer.endAt, Date.now());
+  const durationMs = timer === undefined ? 0 : remainingMs(timer.endAt, now);
   return {
     timerId: timer?.id ?? null,
     pointerId: -1,
@@ -62,36 +48,4 @@ export function createGesture(
     color: timer?.color ?? color,
     moved: false,
   };
-}
-
-export function findTargetTimer(
-  target: Element,
-  timers: TimerRecord[]
-): TimerRecord | undefined {
-  const id = target.closest<HTMLElement>("[data-timer-id]")?.dataset.timerId;
-  return timers.find((timer) => timer.id === id);
-}
-
-export function commitGesture(actor: RailActor, options: RailOptions): void {
-  const gesture = actor.getSnapshot().context.gesture;
-  if (gesture === null) {
-    return;
-  }
-  if (gesture.timerId !== null) {
-    options.onUpdateTimer(gesture.timerId, gesture.durationMs);
-  } else if (gesture.durationMs > 0) {
-    options.onCreateTimer(gesture.durationMs, gesture.color);
-  }
-  actor.send({ type: "FINISH" });
-}
-
-export function initialDuration(
-  clientY: number,
-  rail: DOMRect,
-  rangeMinutes: number,
-  startPin: boolean
-): number {
-  return startPin
-    ? 0
-    : yToDurationMs(clientY, rail.top, rail.height, rangeMinutes);
 }

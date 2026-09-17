@@ -3,7 +3,8 @@ import { type KeyboardEvent, type PointerEvent, useEffect } from "react";
 
 import { appMachine } from "@/app/appMachine";
 
-import * as railGesture from "./timerRailGeometry";
+import * as railGesture from "./timerRailActions";
+import { createGesture, getGestureDuration } from "./timerRailGeometry";
 import { handleRailKey } from "./timerRailKeyboard";
 
 export function useRailGesture(options: railGesture.RailOptions) {
@@ -13,12 +14,11 @@ export function useRailGesture(options: railGesture.RailOptions) {
   const select = (id: string): void => send({ type: "SHOW_ACTIONS", id });
   const pointerMove = (event: PointerEvent<HTMLDivElement>): void => {
     const current = actor.getSnapshot().context.gesture;
+    if (current?.pointerId !== event.pointerId) {
+      return;
+    }
     const rail = options.railRef.current?.getBoundingClientRect();
-    if (
-      current === null ||
-      rail === undefined ||
-      current.pointerId !== event.pointerId
-    ) {
+    if (rail === undefined) {
       return;
     }
     const moved =
@@ -29,7 +29,7 @@ export function useRailGesture(options: railGesture.RailOptions) {
         gesture: {
           ...current,
           moved,
-          durationMs: railGesture.getGestureDuration(
+          durationMs: getGestureDuration(
             current,
             event.clientY,
             rail,
@@ -47,6 +47,9 @@ export function useRailGesture(options: railGesture.RailOptions) {
     }
     if (current.timerId !== null && !current.moved) {
       select(current.timerId);
+    } else if (current.timerId === null && !current.moved) {
+      cancel();
+      options.onStartAdjust();
     } else {
       railGesture.commitGesture(actor, options);
     }
@@ -92,23 +95,14 @@ function startPointer(
   if (railElement === null) {
     return;
   }
-  const rail = railElement.getBoundingClientRect();
   const timer = railGesture.findTargetTimer(target, options.timers);
   if (actor.getSnapshot().context.selectedId !== null && timer === undefined) {
     actor.send({ type: "CANCEL" });
     return;
   }
-  const next = railGesture.createGesture(timer, options.color);
+  const next = createGesture(timer, options.color, Date.now());
   next.pointerId = event.pointerId;
   next.startY = event.clientY;
-  if (timer === undefined) {
-    next.durationMs = railGesture.initialDuration(
-      event.clientY,
-      rail,
-      options.rangeMinutes,
-      target.closest(".start-pin") !== null
-    );
-  }
   event.preventDefault();
   event.currentTarget.setPointerCapture(event.pointerId);
   actor.send({
@@ -128,7 +122,8 @@ function useGestureCancellation(actor: railGesture.RailActor): void {
     const onOutside = (event: globalThis.PointerEvent): void => {
       if (
         event.target instanceof Element &&
-        event.target.closest(".timer-rail") === null
+        event.target.closest(".start-pin, [data-timer-id], .timer-actions") ===
+          null
       ) {
         reset();
       }
@@ -150,6 +145,7 @@ function isStartPointer(event: PointerEvent<HTMLDivElement>): boolean {
   return (
     event.isPrimary &&
     event.button === 0 &&
-    (event.target as Element).closest(".timer-actions") === null
+    (event.target as Element).closest(".timer-actions") === null &&
+    (event.target as Element).closest(".start-pin, [data-timer-id]") !== null
   );
 }

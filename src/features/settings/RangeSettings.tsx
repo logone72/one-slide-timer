@@ -25,7 +25,10 @@ export function RangeSettings({
     <section className="range-card" aria-labelledby="range-title">
       <div className="range-card__heading">
         <h2 id="range-title">시간 범위</h2>
-        <span>5분 — 12시간</span>
+        <span>
+          {formatTimeLabel(rangeMinutesToMs(MIN_RANGE_MINUTES))} —{" "}
+          {formatTimeLabel(rangeMinutesToMs(MAX_RANGE_MINUTES))}
+        </span>
       </div>
       <p>시간 레일의 가장 위쪽에 표시할 시간이에요.</p>
       <div className="range-stepper" aria-label="시간 범위 조정">

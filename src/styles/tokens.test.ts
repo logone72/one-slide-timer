@@ -2,7 +2,15 @@ import { expect, it } from "vitest";
 
 import { THEMES } from "@/domain/timer/timerTypes";
 
-import base from "./base.css?raw";
+const styles = import.meta.glob<string>("./*.css", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const base = Object.entries(styles)
+  .filter(([path]) => !path.endsWith("tokens.css"))
+  .map(([, css]) => css)
+  .join("\n");
 import tokens from "./tokens.css?raw";
 
 it("keeps shared style values in tokens and defines every referenced token", () => {

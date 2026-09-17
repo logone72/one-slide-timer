@@ -1,85 +1,76 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { remainingMs } from "@/domain/timer/timerMath";
 import { loadTimers, saveTimers } from "@/domain/timer/timerStorage";
 import type { TimerRecord } from "@/domain/timer/timerTypes";
-import { getNotificationPort } from "@/platform/notifications";
 import { startTimerWorker } from "@/workers/timerWorkerClient";
 
-const notifications = getNotificationPort();
+import { useStoredState } from "./useStoredState";
+import { useTimerNotifications } from "./useTimerNotifications";
+
+const mergeTimers = (stored: TimerRecord[], current: TimerRecord[]) => [
+  ...new Map(
+    [...stored, ...current].map((timer) => [timer.id, timer])
+  ).values(),
+];
 
 export function useTimers() {
   const [now, setNow] = useState(Date.now);
-  const [timers, setTimers] = useState(() =>
-    loadTimers().filter((timer) => timer.status !== "dismissed")
-  );
+  const refresh = useCallback(() => setNow(Date.now()), []);
+  const store = useStoredState(loadTimers, saveTimers, [], mergeTimers);
+  const timers = store.value;
   const runningTimers = timers.filter(
     (timer) => remainingMs(timer.endAt, now) > 0
   );
   const completedTimers = timers.filter(
     (timer) => remainingMs(timer.endAt, now) === 0
   );
-
-  useEffect(() => startTimerWorker(() => setNow(Date.now())), []);
+  const notification = useTimerNotifications(
+    timers,
+    completedTimers.length > 0,
+    refresh
+  );
+  useEffect(() => startTimerWorker(refresh), [refresh]);
   useEffect(() => {
-    const refresh = (): void => setNow(Date.now());
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, []);
-  useEffect(() => saveTimers(timers), [timers]);
-  useEffect(() => {
-    if (completedTimers.length > 0) {
-      notifications.startRepeatingAlert();
-    }
-    return () => notifications.stopRepeatingAlert();
-  }, [completedTimers.length]);
-
+  }, [refresh]);
   const createTimer = (durationMs: number, color: string): void => {
     const createdAt = Date.now();
-    const timer: TimerRecord = {
+    notification.enableAudio();
+    setNow(createdAt);
+    const timer = {
       id: crypto.randomUUID(),
       color,
       createdAt,
       endAt: createdAt + durationMs,
-      status: "running",
     };
-    void notifications.ensurePermission();
-    setNow(createdAt);
-    setTimers((current) => [...current, timer]);
-    void notifications.scheduleTimer(timer);
+    store.update((current) => [...current, timer]);
   };
   const dismissTimer = (id: string): void => {
-    setTimers((current) => current.filter((timer) => timer.id !== id));
-    void notifications.cancelTimer(id);
+    store.update((current) => current.filter((timer) => timer.id !== id));
   };
   const updateTimer = (id: string, durationMs: number): void => {
     if (durationMs <= 0) {
       dismissTimer(id);
       return;
     }
-    const timer = timers.find((item) => item.id === id);
-    if (timer === undefined) {
-      return;
-    }
-    const updated = { ...timer, endAt: Date.now() + durationMs };
-    setNow(Date.now());
-    setTimers((current) =>
-      current.map((item) => (item.id === id ? updated : item))
+    const updatedAt = Date.now();
+    setNow(updatedAt);
+    store.update((current) =>
+      current.map((timer) =>
+        timer.id === id ? { ...timer, endAt: updatedAt + durationMs } : timer
+      )
     );
-    void notifications
-      .cancelTimer(id)
-      .then(() => notifications.scheduleTimer(updated));
   };
   const acknowledge = (): void => {
     const ids = new Set(completedTimers.map((timer) => timer.id));
-    setTimers((current) => current.filter((timer) => !ids.has(timer.id)));
-    notifications.stopRepeatingAlert();
+    store.update((current) => current.filter((timer) => !ids.has(timer.id)));
   };
-
   return {
     now,
     runningTimers,
@@ -88,5 +79,8 @@ export function useTimers() {
     updateTimer,
     dismissTimer,
     acknowledge,
+    storageFailed: store.failed,
+    retryStorage: store.retry,
+    ...notification,
   };
 }

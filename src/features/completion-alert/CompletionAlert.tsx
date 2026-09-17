@@ -1,5 +1,5 @@
 import { BellRing, Check } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 import { formatDuration } from "@/domain/timer/timerMath";
 import type { TimerRecord } from "@/domain/timer/timerTypes";
@@ -7,18 +7,21 @@ import type { TimerRecord } from "@/domain/timer/timerTypes";
 export function CompletionAlert({
   completedTimers,
   onAcknowledge,
+  notices,
 }: {
+  notices?: ReactNode;
   completedTimers: TimerRecord[];
   onAcknowledge: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const open = completedTimers.length > 0;
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (completedTimers.length > 0 && dialog !== null && !dialog.open) {
+    if (open && dialog !== null && !dialog.open) {
       dialog.showModal();
     }
     return () => dialog?.close();
-  }, [completedTimers.length]);
+  }, [open]);
 
   if (completedTimers.length === 0) {
     return null;
@@ -40,6 +43,7 @@ export function CompletionAlert({
         <br />
         확인하면 알림이 멈춰요.
       </p>
+      {notices}
       <ul>
         {completedTimers.map((timer) => (
           <li key={timer.id}>

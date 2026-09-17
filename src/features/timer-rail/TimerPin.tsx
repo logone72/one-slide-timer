@@ -19,6 +19,7 @@ export function TimerPin({
   onSelect,
   onDismiss,
   onClose,
+  onAdjust,
 }: {
   timer: TimerRecord;
   now: number;
@@ -28,6 +29,7 @@ export function TimerPin({
   onSelect: () => void;
   onDismiss: () => void;
   onClose: () => void;
+  onAdjust: () => void;
 }) {
   const duration = remainingMs(timer.endAt, now);
   const ref = useTimerMotion({ motion, now, endAt: timer.endAt, editing });
@@ -68,7 +70,16 @@ export function TimerPin({
             }
           }}
         >
-          <span className="timer-pin__time">{formatClock(duration)}</span>
+          <span className="timer-pin__time">
+            {formatClock(duration)
+              .split(":")
+              .map((part, index, parts) => (
+                <span key={index}>
+                  {part}
+                  {index < parts.length - 1 ? ":" : ""}
+                </span>
+              ))}
+          </span>
           <span className="timer-pin__detail">
             진행 중 <span>· {formatEndTime(timer.endAt)} 종료</span>
           </span>
@@ -79,6 +90,9 @@ export function TimerPin({
         </button>
         {selected && (
           <div className="timer-actions">
+            <button type="button" onClick={onAdjust}>
+              시간 조정
+            </button>
             <button type="button" onClick={onDismiss}>
               <Square fill="currentColor" className="icon icon-xs" /> 조기 종료
             </button>

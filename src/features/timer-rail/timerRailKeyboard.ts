@@ -7,7 +7,8 @@ import {
 } from "@/domain/timer/timerMath";
 import { TIMER_STEP_MS } from "@/domain/timer/timerTypes";
 
-import * as railGesture from "./timerRailGeometry";
+import * as railGesture from "./timerRailActions";
+import { createGesture } from "./timerRailGeometry";
 
 export function handleRailKey(
   event: KeyboardEvent<HTMLDivElement>,
@@ -31,7 +32,7 @@ export function handleRailKey(
     return;
   }
   event.preventDefault();
-  const gesture = current ?? railGesture.createGesture(timer, options.color);
+  const gesture = current ?? createGesture(timer, options.color, Date.now());
   const next = adjustWithKeyboard(gesture, event, options.rangeMinutes);
   if (current === null) {
     actor.send({
@@ -44,7 +45,7 @@ export function handleRailKey(
 }
 
 function adjustWithKeyboard(
-  gesture: ReturnType<typeof railGesture.createGesture>,
+  gesture: ReturnType<typeof createGesture>,
   event: KeyboardEvent<HTMLDivElement>,
   rangeMinutes: number
 ) {

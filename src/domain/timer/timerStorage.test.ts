@@ -1,10 +1,16 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { loadSettings, loadTimers, saveSettings } from "./timerStorage";
+import {
+  loadSettings,
+  loadTimers,
+  saveSettings,
+  saveTimers,
+} from "./timerStorage";
 import { DEFAULT_SETTINGS, TIMER_COLORS } from "./timerTypes";
 
+const values = new Map<string, string>();
 beforeEach(() => {
-  const values = new Map<string, string>();
+  values.clear();
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
@@ -12,57 +18,93 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-it("migrates saved hours and colors without changing timer identity or deadlines", () => {
+it("migrates legacy status, colors and hours without changing identity or deadlines", () => {
   localStorage.setItem(
     "one-slide-timer:settings",
     JSON.stringify({ rangeHours: 2 })
   );
-  expect(loadSettings()).toEqual({ rangeMinutes: 120, theme: "white" });
+  expect(loadSettings()).toEqual({
+    ok: true,
+    value: { rangeMinutes: 120, theme: "white" },
+  });
   const timer = {
     id: "existing",
     color: "#2563eb",
     createdAt: 1000,
     endAt: 9000,
-    status: "running",
   };
-  localStorage.setItem("one-slide-timer:timers", JSON.stringify([timer]));
-  expect(loadTimers()).toEqual([{ ...timer, color: TIMER_COLORS[0] }]);
-  saveSettings({ rangeMinutes: 25, theme: "midnight" });
-  expect(loadSettings()).toEqual({ rangeMinutes: 25, theme: "midnight" });
+  for (const status of ["running", "alerting", undefined]) {
+    localStorage.setItem(
+      "one-slide-timer:timers",
+      JSON.stringify([{ ...timer, status }])
+    );
+    expect(loadTimers()).toEqual({
+      ok: true,
+      value: [{ ...timer, color: TIMER_COLORS[0] }],
+    });
+  }
+  localStorage.setItem(
+    "one-slide-timer:timers",
+    JSON.stringify([{ ...timer, status: "dismissed" }])
+  );
+  expect(loadTimers()).toEqual({ ok: true, value: [] });
+  expect(saveSettings({ rangeMinutes: 25, theme: "midnight" })).toBe(true);
+  expect(loadSettings()).toEqual({
+    ok: true,
+    value: { rangeMinutes: 25, theme: "midnight" },
+  });
 });
 
-it("recovers malformed and unsupported settings at the storage boundary", () => {
-  localStorage.setItem("one-slide-timer:settings", "{broken");
-  expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
-  localStorage.setItem("one-slide-timer:timers", "{broken");
-  expect(loadTimers()).toEqual([]);
-  localStorage.setItem(
-    "one-slide-timer:settings",
-    JSON.stringify({ rangeMinutes: -3, theme: "missing" })
-  );
-  expect(loadSettings()).toEqual({ rangeMinutes: 5, theme: "white" });
-  localStorage.setItem(
-    "one-slide-timer:settings",
-    JSON.stringify({ rangeHours: 100 })
-  );
-  expect(loadSettings()).toEqual({ rangeMinutes: 720, theme: "white" });
+it("distinguishes missing, malformed and inaccessible storage and reports write failures", () => {
+  expect(loadSettings()).toEqual({ ok: true, value: DEFAULT_SETTINGS });
+  expect(loadTimers()).toEqual({ ok: true, value: [] });
+  for (const key of ["one-slide-timer:timers", "one-slide-timer:settings"]) {
+    localStorage.setItem(key, "{broken");
+  }
+  expect(loadTimers()).toEqual({ ok: false });
+  expect(loadSettings()).toEqual({ ok: false });
+  localStorage.setItem("one-slide-timer:settings", "[]");
+  expect(loadSettings()).toEqual({ ok: false });
+  vi.stubGlobal("localStorage", {
+    getItem: () => {
+      throw new Error("read failed");
+    },
+    setItem: () => {
+      throw new Error("write failed");
+    },
+  });
+  expect(loadTimers()).toEqual({ ok: false });
+  expect(loadSettings()).toEqual({ ok: false });
+  expect(saveSettings(DEFAULT_SETTINGS)).toBe(false);
+  expect(saveTimers([])).toBe(false);
 });
 
-it("replaces retired lavender with white while retaining the selected range", () => {
-  expect(loadSettings()).toEqual({ rangeMinutes: 60, theme: "white" });
+it("preserves valid timers when invalid records are present by refusing to overwrite", () => {
   localStorage.setItem(
-    "one-slide-timer:settings",
-    JSON.stringify({ rangeMinutes: 25, theme: "lavender" })
+    "one-slide-timer:timers",
+    JSON.stringify([{ id: "broken" }])
   );
-  expect(loadSettings()).toEqual({ rangeMinutes: 25, theme: "white" });
-  saveSettings({ rangeMinutes: 25, theme: "forest" });
-  expect(loadSettings()).toEqual({ rangeMinutes: 25, theme: "forest" });
+  expect(loadTimers()).toEqual({ ok: false });
+  expect(localStorage.getItem("one-slide-timer:timers")).toContain("broken");
 });
 
-it("clamps a saved 24-hour range to 12 hours", () => {
-  localStorage.setItem(
-    "one-slide-timer:settings",
-    JSON.stringify({ rangeMinutes: 1440, theme: "ocean" })
-  );
-  expect(loadSettings()).toEqual({ rangeMinutes: 720, theme: "ocean" });
+it("normalizes old ranges and retired themes", () => {
+  for (const [saved, expected] of [
+    [
+      { rangeMinutes: -3, theme: "missing" },
+      { rangeMinutes: 5, theme: "white" },
+    ],
+    [{ rangeHours: 100 }, { rangeMinutes: 720, theme: "white" }],
+    [
+      { rangeMinutes: 1440, theme: "ocean" },
+      { rangeMinutes: 720, theme: "ocean" },
+    ],
+    [
+      { rangeMinutes: 25, theme: "lavender" },
+      { rangeMinutes: 25, theme: "white" },
+    ],
+  ]) {
+    localStorage.setItem("one-slide-timer:settings", JSON.stringify(saved));
+    expect(loadSettings()).toEqual({ ok: true, value: expected });
+  }
 });

@@ -2,6 +2,85 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-17 KISS·DRY·SSOT 리팩터링 8단계
+
+### 구현
+
+1. 저장소 접근 실패와 빈 저장소를 구분했다. 읽지 못한 원본을 덮어쓰지 않고 메모리에서 계속 동작하며 재시도 시 타이머와 변경한 설정 필드를 합친다.
+2. 사용하지 않던 `timerMachine`과 저장 상태를 제거했다. 진행·완료는 종료 시각에서 계산하며, 이전 상태 필드와 색상·시간 범위는 호환 읽기로 이전한다.
+3. 알림 권한 결과와 예약·취소 오류를 처리하고 ID별 작업 순서를 보장했다. 복원된 타이머의 오디오 활성화 버튼, 웹·iOS 공통 반복 알림음, 비동기 구독 해제 처리를 추가했다.
+4. 완료 목록 추가 시 창과 반복 알림음이 다시 시작되지 않도록 했다. Worker 생성·실행 오류는 같은 주기의 폴백으로 전환하고 정리 후 재시작을 막는다.
+5. 시간 범위 보정·스테퍼·슬라이더가 `RANGE_MINUTE_OPTIONS`를 공유한다. 설정 머리말도 공통 최솟값·최댓값에서 표시한다.
+6. 순수 제스처 계산과 DOM 처리를 분리했다. 빈 레일에서 스크롤·확대를 허용하고 탭·키보드로 여는 시간 조정을 추가했다. 실제 카드 높이를 측정해 200% 글자 확대에서도 라벨과 하단 안내가 겹치지 않게 했다.
+7. 공통·레일·설정·완료 CSS를 분리했다. 중립 버튼 배경의 의미 토큰, `rem` 글꼴, 사용하지 않는 토큰 제거, 전체 CSS 토큰 검사를 적용했다.
+8. 오류 복구·이전·알림 경쟁 조건·구독·오디오·Worker·제스처의 단위 회귀 검사와 브라우저 회귀 검사를 추가했다. 제품 용어·스펙·구조·토큰·에이전트 지침을 맞췄다.
+
+### 검증 및 후속 리뷰
+
+- `npm run verify`: lint 경고 0개, Prettier, TypeScript 및 단위 테스트 25개 통과. `npm run verify:browser`: 프로덕션 빌드와 Chromium·모바일 WebKit 브라우저 검사 42개 통과.
+- 브라우저 검사는 저장소 읽기·쓰기 실패, 복구 병합, 비드래그 생성·편집·초점 복귀, 완료 목록 추가, 320px·200% 글자 확대, 키보드 미리보기와 조정 창 사이 전환, 오디오 일시 중단·종료 후 재활성화를 포함한다.
+- Chromium의 실제 터치 이벤트로 빈 레일을 쓸어 538px 스크롤했을 때 타이머 8개가 유지되고 미리보기가 생성되지 않았다. 모바일 WebKit에서도 시작 핀의 탭으로 시간 조정 창이 열렸다.
+- 후속 Standards 리뷰 1건: 알림 이벤트 등록 실패의 재시도가 빠져 있었다. 재시도 시 이전 구독을 정리하고 다시 등록하며, 해제 후 늦게 도착하는 실패와 중복 해제도 처리한다. 수정 후 재검토에서 해결을 확인했다.
+- 후속 Spec 리뷰 1건: 키보드 미리보기 중 Space로 시간 조정 창을 열면 이전 미리보기가 남았다. 창을 열 때 제스처를 취소하고 중복 생성 방지 회귀 검사를 추가했다. 수정 후 재검토에서 해결을 확인했다.
+- 직접 재현한 오디오 복구 문제 1건: 오디오가 일시 중단돼도 활성화 상태가 남아 재시도 버튼이 보이지 않았다. `AudioContext` 상태를 구독해 안내를 갱신하고 종료된 컨텍스트도 재생성한다. 시간 조정·완료 창은 상하·좌우 안전 영역 안에 배치한다.
+- 이번 리뷰에서 확인한 미해결 항목은 없다. 실제 iPhone 기기와 잠금 화면·백그라운드 알림 검증은 포함하지 않는다.
+
+### 변경 파일
+
+- `AGENTS.md`
+- `CONTEXT.md`
+- `docs/design-tokens.md`
+- `docs/product-spec.md`
+- `docs/progress.md`
+- `docs/project-structure.md`
+- `src/app/App.tsx`
+- `src/app/AppNotices.tsx`
+- `src/app/useSettings.ts`
+- `src/app/useStoredState.ts`
+- `src/app/useTimerNotifications.ts`
+- `src/app/useTimers.ts`
+- `src/domain/timer/timerMachine.ts` (삭제)
+- `src/domain/timer/timerMath.test.ts`
+- `src/domain/timer/timerMath.ts`
+- `src/domain/timer/timerStorage.test.ts`
+- `src/domain/timer/timerStorage.ts`
+- `src/domain/timer/timerTypes.ts`
+- `src/features/completion-alert/CompletionAlert.tsx`
+- `src/features/settings/RangeSettings.tsx`
+- `src/features/settings/SettingsPanel.tsx`
+- `src/features/settings/StatusNotice.tsx`
+- `src/features/timer-rail/RailDecorations.tsx`
+- `src/features/timer-rail/TimerAdjustment.tsx`
+- `src/features/timer-rail/TimerPin.tsx`
+- `src/features/timer-rail/TimerRail.tsx`
+- `src/features/timer-rail/timerRailActions.ts`
+- `src/features/timer-rail/timerRailGeometry.test.ts`
+- `src/features/timer-rail/timerRailGeometry.ts`
+- `src/features/timer-rail/timerRailKeyboard.ts`
+- `src/features/timer-rail/useRailGesture.ts`
+- `src/features/timer-rail/useRailLayout.ts`
+- `src/platform/notifications/alertAudio.test.ts`
+- `src/platform/notifications/alertAudio.ts`
+- `src/platform/notifications/browserNotifications.ts`
+- `src/platform/notifications/capacitorNotifications.test.ts`
+- `src/platform/notifications/capacitorNotifications.ts`
+- `src/platform/notifications/notificationPort.ts`
+- `src/platform/notifications/syncNotifications.test.ts`
+- `src/platform/notifications/syncNotifications.ts`
+- `src/styles/base.css`
+- `src/styles/completion-alert.css`
+- `src/styles/settings.css`
+- `src/styles/timer-rail.css`
+- `src/styles/tokens.css`
+- `src/styles/tokens.test.ts`
+- `src/workers/timerWorker.ts`
+- `src/workers/timerWorkerClient.test.ts`
+- `src/workers/timerWorkerClient.ts`
+- `tests/browser/rail-layout.spec.ts`
+- `tests/browser/settings.spec.ts`
+- `tests/browser/storage-recovery.spec.ts`
+- `tests/browser/timer-accessibility.spec.ts`
+
 ## 2026-09-17 슬라이더 시각 디자인 정리
 
 - 손잡이의 강조색 원과 두꺼운 테두리를 흰색 26px 손잡이와 얕은 그림자로 바꿨다. 트랙은 연한 중립색으로 두고 선택한 구간만 테마 강조색으로 채운다.

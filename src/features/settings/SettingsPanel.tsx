@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowUp, MoveVertical, Volume2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 import type { AppSettings } from "@/domain/timer/timerTypes";
 
@@ -7,6 +7,7 @@ import { RangeSettings } from "./RangeSettings";
 import { ThemeSettings } from "./ThemeSettings";
 
 type SettingsPanelProps = {
+  notices?: ReactNode;
   settings: AppSettings;
   onChange: (settings: AppSettings) => void;
   onClose: () => void;
@@ -14,6 +15,7 @@ type SettingsPanelProps = {
 
 export function SettingsPanel({
   settings,
+  notices,
   onChange,
   onClose,
 }: SettingsPanelProps) {
@@ -53,6 +55,7 @@ export function SettingsPanel({
         <span className="settings-save-note">자동 저장</span>
       </header>
       <div className="settings-content">
+        {notices}
         <p className="settings-description">
           시간 범위와 화면 색상을 설정하세요.
         </p>

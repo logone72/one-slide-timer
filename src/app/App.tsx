@@ -7,14 +7,17 @@ import { SettingsButton } from "@/features/settings/SettingsButton";
 import { SettingsPanel } from "@/features/settings/SettingsPanel";
 import { TimerRail } from "@/features/timer-rail/TimerRail";
 
+import { AppNotices } from "./AppNotices";
 import { useSettings } from "./useSettings";
 import { useTimers } from "./useTimers";
 
 export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settings, setSettings] = useSettings();
+  const settingsStore = useSettings();
+  const settings = settingsStore.value;
   const timers = useTimers();
 
+  const notices = <AppNotices settingsStore={settingsStore} timers={timers} />;
   return (
     <main className="app-shell">
       <div className="timer-screen">
@@ -52,6 +55,7 @@ export function App() {
           onUpdateTimer={timers.updateTimer}
           onDismissTimer={timers.dismissTimer}
         />
+        {notices}
         <footer className="app-footer">
           <AudioLines className="icon icon-sm" /> 앱을 열어두면 완료 알림이
           울려요.
@@ -61,12 +65,14 @@ export function App() {
         <SettingsPanel
           settings={settings}
           onClose={() => setSettingsOpen(false)}
-          onChange={setSettings}
+          onChange={settingsStore.update}
+          notices={notices}
         />
       )}
       <CompletionAlert
         completedTimers={timers.completedTimers}
         onAcknowledge={timers.acknowledge}
+        notices={notices}
       />
     </main>
   );
