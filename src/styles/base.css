@@ -209,7 +209,8 @@ h2 {
   position: absolute;
   content: "";
   top: calc(-1 * var(--space-1));
-  left: calc(-1 * var(--space-half));
+  left: 50%;
+  transform: translateX(-50%);
   width: var(--space-2);
   height: var(--space-2);
   background: var(--color-rail-mark);
@@ -920,7 +921,7 @@ h2 {
 }
 @media (min-width: 600px) {
   body {
-    padding: var(--space-6) 0;
+    padding: max(var(--space-6), calc((100dvh - var(--app-max-height)) / 2)) 0;
   }
   .app-shell {
     border-radius: var(--radius-shell);
