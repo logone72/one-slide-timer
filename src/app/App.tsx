@@ -1,4 +1,4 @@
-import { ArrowUpRight, AudioLines } from "lucide-react";
+import { AudioLines } from "lucide-react";
 import { useState } from "react";
 
 import { formatTimeLabel, rangeMinutesToMs } from "@/domain/timer/timerMath";
@@ -19,33 +19,26 @@ export function App() {
     <main className="app-shell">
       <div className="timer-screen">
         <header className="app-header">
-          <div className="wordmark" aria-label="One Slide Timer">
+          <h1 className="wordmark" aria-label="One Slide Timer">
             <span className="brand-mark" aria-hidden="true">
               <i />
               <i />
               <i />
             </span>
             <span>
-              one slide<span className="wordmark__caption">TIMER</span>
+              one slide<span className="wordmark__caption">timer</span>
             </span>
-          </div>
+          </h1>
           <SettingsButton onClick={() => setSettingsOpen(true)} />
         </header>
-        <section className="intro" aria-labelledby="page-title">
-          <div className="eyebrow">
-            MAKE ROOM FOR YOUR TIME <ArrowUpRight className="icon icon-sm" />
-          </div>
-          <h1 id="page-title">시간을, 가볍게.</h1>
-          <p>핀을 올리고 놓으면, 나만의 시간이 시작돼요.</p>
-        </section>
         <div className="rail-heading">
           <span
             className={`activity-status${timers.runningTimers.length > 0 ? " activity-status--running" : ""}`}
           >
             <i />
             {timers.runningTimers.length > 0
-              ? `${String(timers.runningTimers.length)}개의 타이머 진행 중`
-              : "시작할 준비가 됐어요"}
+              ? `${String(timers.runningTimers.length)}개 진행 중`
+              : "진행 중인 타이머 없음"}
           </span>
           <span>
             0 — {formatTimeLabel(rangeMinutesToMs(settings.rangeMinutes))}
@@ -60,8 +53,8 @@ export function App() {
           onDismissTimer={timers.dismissTimer}
         />
         <footer className="app-footer">
-          <AudioLines className="icon icon-sm" /> 시간이 끝나면, 소리로
-          알려드릴게요.
+          <AudioLines className="icon icon-sm" /> 앱을 열어두면 완료 알림이
+          울려요.
         </footer>
       </div>
       {settingsOpen && (

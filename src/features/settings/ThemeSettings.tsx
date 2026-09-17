@@ -12,7 +12,7 @@ export function ThemeSettings({
   return (
     <fieldset className="theme-settings" aria-describedby="theme-description">
       <legend>색상 테마</legend>
-      <p id="theme-description">지금의 기분에 맞는 색을 골라보세요.</p>
+      <p id="theme-description">선택한 색상이 화면 전체에 바로 적용돼요.</p>
       <div className="theme-options">
         {timerTypes.THEMES.map((option) => (
           <label className="theme-option" key={option.id}>
@@ -34,11 +34,14 @@ export function ThemeSettings({
                 <i />
               </span>
               <span className="theme-preview__start" />
-              <span className="theme-preview__check">
-                <Check className="icon icon-sm" />
-              </span>
             </span>
-            <strong>{option.name}</strong>
+            <span className="theme-option__heading">
+              <strong>{option.name}</strong>
+              <Check
+                className="icon icon-sm theme-option__check"
+                aria-hidden="true"
+              />
+            </span>
             <span className="theme-option__description">
               {option.description}
             </span>

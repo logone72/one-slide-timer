@@ -12,17 +12,27 @@
 1. 먼저 같은 역할의 토큰을 찾는다. `--space-*`는 공통 간격, `--font-*`는 글꼴, `--radius-*`는 모서리, `--motion-*`는 움직임이다.
 2. 배경은 `--color-surface` 또는 `--color-surface-raised`, 본문은 `--color-text`, 보조 문구는 `--color-text-muted`를 사용한다. 버튼은 `--color-primary`와 `--color-on-primary`처럼 배경과 전경을 짝으로 사용한다.
 3. 시작 핀, 호버, 포커스, 조기 종료, 완료 알림과 backdrop도 의미 토큰을 사용한다. 특정 테마에만 맞는 색상 값을 컴포넌트에 넣지 않는다.
-4. 타이머의 `color`는 `var(--color-timer-1)`부터 `var(--color-timer-5)`까지 순번을 저장한다. 같은 타이머는 테마가 바뀌어도 순번을 유지한다. 타이머 카드의 배경·테두리·호버는 `--timer-*` 토큰으로 해당 색상을 혼합한다.
+4. 타이머의 `color`는 `var(--color-timer-1)`부터 `var(--color-timer-5)`까지 순번을 저장한다. 같은 타이머는 테마가 바뀌어도 순번을 유지한다. 색상은 핀·연결선·6px 너비의 카드 왼쪽 테두리(`--rail-color-stripe`)에 사용하고, 시간 숫자와 기본 표면은 중립 색상을 사용한다. 호버 배경은 `--timer-hover`로 약하게 혼합한다.
 5. 아이콘은 `.icon`과 `.icon-xs/sm/lg/xl`을 사용한다. 크기와 선 두께를 JSX에 따로 지정하지 않는다.
 6. 라벨 높이는 `--rail-label-height`, 충돌 회피 간격은 `--rail-label-pitch`, 하단 여유는 `--rail-bottom-clearance`가 기준이다. `TimerRail`은 계산된 CSS 값을 읽어 순수 배치 함수에 전달한다. 라벨 높이를 늘릴 때 간격도 함께 조정한다.
 7. 색상 미리보기는 카드에 `data-theme`를 붙여 실제 테마 토큰으로 그린다. 파생 색상은 `:root, [data-theme]`에서 정의해 미리보기 안에서도 해당 테마의 값을 계산한다.
 8. 동작 줄이기 설정에서는 모든 애니메이션과 전환을 끈다. `useTimerMotion`의 Web Animations API도 미디어 쿼리 변경을 구독해 실행 중인 보간을 취소한다.
 9. 카운트다운 이동은 장식 모션과 구분한다. `TIMER_TICK_MS`는 워커와 위치 보간이 공유하는 1초 갱신 간격이며, 실제 시간의 흐름을 나타내므로 선형으로 보간한다. 핀·라벨·연결선의 위치는 `transform`에만 전달한다. 레일 크기와 라벨 간격은 기존 레일 토큰을 사용한다.
+10. 본문은 14px, 보조 문구는 최소 12px를 사용한다. 글꼴 두께는 `--font-weight-regular`(400)와 `--font-weight-semibold`(600)로 제한한다. 본문 행간은 1.6 이상으로 두고, 안내 문구는 왼쪽으로 정렬한다.
+11. 장식 구분선은 `--color-border`, 버튼과 선택 영역의 윤곽은 `--color-control-border`를 사용한다. 글자는 배경과 4.5:1 이상, 조작을 식별하는 윤곽·아이콘은 3:1 이상을 목표로 하며, 선택·호버 상태도 확인한다.
+12. 조작 영역은 `--size-touch` 기준 최소 48×48px로 잡는다. 시작 핀은 64px이며, 인접한 타이머 액션 사이에는 8px 간격을 둔다. 설정의 테마 체크와 포커스 표시는 미리보기 팔레트가 아닌 현재 화면의 토큰을 사용한다.
+
+13. 안내 화살표는 `--motion-hint` 주기로 위로 끌기를 안내한다. 드래그 미리보기는 `pin-lift`, 놓기는 `pin-drop`, 액션 열기는 `actions-in`으로 표현한다. 배율과 시간은 모션 토큰을 사용한다. 위치 이동을 맡는 `.timer-label`과 별도로 자식 `.timer-pin`의 배율을 바꿔 카운트다운 보간을 덮어쓰지 않는다. 착지 모션은 생성 및 드래그 종료 때만 재생하며, 버튼을 다시 마운트하지 않아 포커스를 유지한다.
+
+## 디자인 참고
+
+- [Apple 색상 지침](https://developer.apple.com/design/human-interface-guidelines/color): 흰색 표면·회색 위계·파란 조작 강조색을 기본 테마로 구성하되, 글자와 배경의 충분한 대비를 유지한다. Apple 시스템 색상의 정확한 복제가 아닌 이 앱의 웹 접근성 기준에 맞춘 팔레트다.
+- [Apple 모션 지침](https://developer.apple.com/design/human-interface-guidelines/motion): 안내와 상태 피드백을 위한 짧고 명확한 움직임을 사용한다. 새 모션은 CSS의 transform·scale·opacity로 구성하며 동작 줄이기를 따른다.
 
 ## 테마 추가·수정
 
 1. `timerTypes.ts`의 `THEMES`에 ID·이름·짧은 설명을 추가한다.
-2. `tokens.css`에 같은 `data-theme` 선택자를 추가하고 기존 테마의 모든 `--color-*` 역할과 `color-scheme`을 선언한다. 기본 테마는 포레스트다.
+2. `tokens.css`에 같은 `data-theme` 선택자를 추가하고 기존 테마의 모든 `--color-*` 역할과 `color-scheme`을 선언한다. 기본 테마는 화이트다. 삭제된 라벤더 저장값은 기본 테마로 읽되 시간 범위와 타이머는 유지한다.
 3. 본문과 보조 문구, 5개 타이머 색상의 글자 대비, 시작 핀, 액션·완료 버튼, 포커스를 밝은 배경과 어두운 배경에서 확인한다. 타이머 시간 표시는 최소 4.5:1 대비를 유지한다.
 4. `tests/browser/settings.spec.ts`의 테마 검증 목록에도 추가하고, `npm run verify`와 `npm run verify:browser`를 실행한다.
 

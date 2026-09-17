@@ -12,6 +12,7 @@ export function SettingsButton({ onClick }: { onClick: () => void }) {
       }}
     >
       <SlidersHorizontal aria-hidden="true" className="icon" />
+      <span>설정</span>
     </button>
   );
 }

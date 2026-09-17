@@ -49,14 +49,12 @@ export function SettingsPanel({
         >
           <ArrowLeft className="icon icon-lg" />
         </button>
-        <span>나에게 맞는 시간</span>
-        <span className="settings-header-spacer" />
+        <h1 id="settings-title">설정</h1>
+        <span className="settings-save-note">자동 저장</span>
       </header>
       <div className="settings-content">
-        <div className="eyebrow">YOUR TIME, YOUR PACE</div>
-        <h1 id="settings-title">설정</h1>
         <p className="settings-description">
-          오늘 필요한 만큼, 시간의 폭을 조절하세요.
+          시간 범위와 화면 색상을 설정하세요.
         </p>
         <RangeSettings
           rangeMinutes={settings.rangeMinutes}
@@ -67,7 +65,7 @@ export function SettingsPanel({
           onChange={(theme) => onChange({ ...settings, theme })}
         />
         <section className="settings-guide" aria-labelledby="guide-title">
-          <h2 id="guide-title">슬라이드 하나로 충분해요</h2>
+          <h2 id="guide-title">사용 방법</h2>
           <div>
             <span className="guide-icon">
               <ArrowUp className="icon" />
@@ -100,16 +98,6 @@ export function SettingsPanel({
           </div>
         </section>
       </div>
-      <button
-        className="primary-button settings-done"
-        type="button"
-        onClick={onClose}
-      >
-        타이머로 돌아가기 <ArrowUp className="icon icon-sm" />
-      </button>
-      <p className="settings-brand">
-        one slide timer <span>작은 움직임, 온전한 시간.</span>
-      </p>
     </dialog>
   );
 }

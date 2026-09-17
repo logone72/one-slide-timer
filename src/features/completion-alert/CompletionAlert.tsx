@@ -34,7 +34,6 @@ export function CompletionAlert({
       <span className="completion-icon">
         <BellRing className="icon icon-xl" />
       </span>
-      <div className="eyebrow">TIME WELL SPENT</div>
       <h2 id="completion-title">시간이 되었어요.</h2>
       <p>
         {completedTimers.length}개의 타이머가 끝났어요.

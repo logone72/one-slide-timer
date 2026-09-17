@@ -70,7 +70,7 @@ export function TimerPin({
         >
           <span className="timer-pin__time">{formatClock(duration)}</span>
           <span className="timer-pin__detail">
-            <i /> 진행 중 <span>· {formatEndTime(timer.endAt)} 종료</span>
+            진행 중 <span>· {formatEndTime(timer.endAt)} 종료</span>
           </span>
           <GripVertical
             className="icon icon-sm timer-pin__grip"

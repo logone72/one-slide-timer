@@ -17,7 +17,7 @@ it("migrates saved hours and colors without changing timer identity or deadlines
     "one-slide-timer:settings",
     JSON.stringify({ rangeHours: 2 })
   );
-  expect(loadSettings()).toEqual({ rangeMinutes: 120, theme: "forest" });
+  expect(loadSettings()).toEqual({ rangeMinutes: 120, theme: "white" });
   const timer = {
     id: "existing",
     color: "#2563eb",
@@ -40,10 +40,21 @@ it("recovers malformed and unsupported settings at the storage boundary", () => 
     "one-slide-timer:settings",
     JSON.stringify({ rangeMinutes: -3, theme: "missing" })
   );
-  expect(loadSettings()).toEqual({ rangeMinutes: 5, theme: "forest" });
+  expect(loadSettings()).toEqual({ rangeMinutes: 5, theme: "white" });
   localStorage.setItem(
     "one-slide-timer:settings",
     JSON.stringify({ rangeHours: 100 })
   );
-  expect(loadSettings()).toEqual({ rangeMinutes: 1440, theme: "forest" });
+  expect(loadSettings()).toEqual({ rangeMinutes: 1440, theme: "white" });
+});
+
+it("replaces retired lavender with white while retaining the selected range", () => {
+  expect(loadSettings()).toEqual({ rangeMinutes: 60, theme: "white" });
+  localStorage.setItem(
+    "one-slide-timer:settings",
+    JSON.stringify({ rangeMinutes: 25, theme: "lavender" })
+  );
+  expect(loadSettings()).toEqual({ rangeMinutes: 25, theme: "white" });
+  saveSettings({ rangeMinutes: 25, theme: "forest" });
+  expect(loadSettings()).toEqual({ rangeMinutes: 25, theme: "forest" });
 });

@@ -2,6 +2,80 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-17 화이트 기본 테마와 제스처 피드백
+
+### 완료
+
+- Apple의 [색상](https://developer.apple.com/design/human-interface-guidelines/color)·[모션](https://developer.apple.com/design/human-interface-guidelines/motion) 지침을 참고해 흰색 표면, 중립 회색, 파란 조작 강조색의 화이트 테마를 기본값으로 추가했다. 라벤더는 제거하고, 이전 라벤더 저장값은 시간 범위를 유지한 채 화이트로 전환한다. 기존 포레스트·오션·미드나이트 선택은 유지한다.
+- `intro` 영역을 제거하고 브랜드를 페이지 제목으로 사용한다. 헤더와 진행 상태 사이 여백을 정리하고 확보한 세로 공간을 레일에 배분했다.
+- 빈 레일의 안내 화살표에 위로 끄는 동작을 알려주는 2.4초 반복 모션을 추가했다. 버튼 누르기, 선택된 핀·카드 확대, 드래그 미리보기 들기, 놓을 때 360ms 착지, 액션 펼치기를 CSS 모션으로 표현한다.
+- 착지 모션은 기존 버튼의 드래그 상태 전환으로 재생한다. 별도 타이머·JS 프레임 루프·DOM 재생성 없이 기존 카운트다운 `transform` 보간과 키보드 포커스를 유지한다. 동작 줄이기에서는 새 모션도 중지한다.
+- 타이머 카드 왼쪽 색상 띠를 2px에서 6px로 넓히고 드래그 아이콘을 세로 중앙에 정렬했다. 색상·모션 시간·배율·띠 너비를 토큰으로 정의했다.
+- 실행 전 HTML·manifest·favicon 색상, 테마 목록과 관련 제품 문서도 새 기본 테마에 맞췄다.
+
+### 검증
+
+- `npm run verify`: lint 경고 0개, Prettier, TypeScript, 단위 테스트 11개 통과. `npm run verify:browser`: 프로덕션 빌드와 Chromium·모바일 WebKit 테스트 24개 통과.
+- Chromium에서 화이트의 빈 화면·실행 중·설정을 시각적으로 확인했다. 320×568px의 23:59:59 타이머도 글자와 드래그 아이콘이 겹치지 않으며, 아이콘과 카드 중심 차이는 0px였다. 설정의 가로 넘침이 없고 끝까지 스크롤해도 뒤로 가기가 보였다.
+- 실제 드래그 생성 및 기존 타이머 수정에서 착지 모션이 각각 한 번 재생되고 이후 1.2초 관찰 중 다시 시작하지 않았다. 누를 때 배율 0.97, 선택 시 카드 1.025·핀 1.2를 확인했다. 안내 화살표는 1.3초 동안 서로 다른 transform 59개가 관측됐다.
+- 기존 타이머 수정 후 ID와 개수는 유지되고 종료 시각만 변경됐다. 키보드 조정 후 포커스도 유지됐다. 동작 줄이기 전환 후 실행 중 애니메이션은 0개였다.
+- 저장된 라벤더·25분 설정을 실제 브라우저에서 화이트·25분으로 전환하고 기존 타이머의 ID·종료 시각이 유지되는 것을 확인했다. 새로운 기본값과 저장값 전환은 단위 회귀 검사로 남겼다.
+- 실제 iPhone 기기 검증은 포함하지 않았다.
+
+### 이번 수정 파일
+
+- `src/app/App.tsx`
+- `src/domain/timer/timerTypes.ts`
+- `src/domain/timer/timerStorage.test.ts`
+- `src/styles/base.css`
+- `src/styles/tokens.css`
+- `tests/browser/settings.spec.ts`
+- `index.html`
+- `public/manifest.webmanifest`
+- `public/favicon.svg`
+- `AGENTS.md`
+- `CONTEXT.md`
+- `docs/design-tokens.md`
+- `docs/product-spec.md`
+- `docs/progress.md`
+
+## 2026-09-17 UI 디자인 원칙 적용
+
+### 완료
+
+- Adham Dannaway의 [16가지 UI 디자인 팁](https://www.adhamdannaway.com/blog/ui-design/ui-design-tips)과 [14가지 UI 디자인 팁](https://www.adhamdannaway.com/blog/ui-design/ui-design-tips-14)을 참고해 핵심 행동의 위계, 여백을 통한 묶음, 일관된 정렬, 대비와 터치 영역을 개선했다.
+- 영문 장식 문구와 반복되는 점멸·화살표 모션을 줄였다. 첫 화면의 소개 영역을 줄이고, 시작 핀은 진한 채움색으로, 실행 중인 타이머는 큰 시간 숫자와 중립 배경으로 구분한다. 기존 `transform` 기반 카운트다운 이동은 유지한다.
+- 본문 14px·보조 문구 최소 12px, 글꼴 두께 400·600을 공통 토큰에 적용했다. 글자·조작 윤곽·호버 색상을 4개 테마 모두에서 보강했다.
+- 설정 버튼에 이름을 표시하고, 버튼·핀 조작 영역을 최소 48×48px로 맞췄다. 조기 종료 액션 사이 간격과 어두운 액션 영역의 키보드 포커스도 확보했다.
+- 설정의 중첩 컨테이너와 중복 복귀 버튼을 제거하고, 시간 범위·색상 테마·사용 방법을 여백으로 구분했다. 스크롤 중에도 뒤로 가기가 보이며 자동 저장 안내를 표시한다.
+- 테마 선택의 윤곽과 체크는 현재 화면 팔레트를 사용하고, 미리보기만 각 테마의 팔레트를 사용한다. 완료 알림도 왼쪽 정렬과 단일 확인 버튼을 중심으로 정리했다.
+- 사용하지 않는 장식 스타일과 토큰을 정리하고 디자인 토큰 문서·제품 스펙을 갱신했다.
+
+### 검증
+
+- `npm run verify`: lint 경고 0개, Prettier, TypeScript, 단위 테스트 10개 통과. `npm run verify:browser`: 프로덕션 빌드와 Chromium·모바일 WebKit 테스트 24개 통과.
+- Chromium에서 4개 테마의 실행 중·설정 화면과 완료 알림을 캡처해 확인했다. 320×568px에서 23시간 타이머, 조기 종료 액션, 설정 스크롤을 확인했으며 가로 넘침과 글자·조작 아이콘 겹침이 없었다.
+- 기본 화면의 본문·보조 문구·타이머 숫자·설정 문구는 4.5:1 이상, 버튼 윤곽·레일·시작 핀은 3:1 이상을 확인했다. 5개 타이머 팔레트의 호버 보조 문구는 최저 4.98:1, 완료 버튼의 호버 글자는 최저 4.74:1이었다. 측정은 브라우저에서 계산된 색상 기준이며 전체 접근성 적합성 인증은 아니다.
+- 조기 종료 버튼과 닫기 버튼의 높이는 48px, 닫기 버튼 너비는 48px였다. 320px 설정 화면을 끝까지 스크롤한 뒤에도 뒤로 가기 버튼은 화면 안에 유지됐다.
+- 기존 브라우저 회귀 검증의 색상 검사에 타이머 보조 문구를 추가했다. 실제 iPhone 기기 검증은 포함하지 않았다.
+
+### 변경 파일
+
+- `src/app/App.tsx`
+- `src/features/completion-alert/CompletionAlert.tsx`
+- `src/features/settings/SettingsButton.tsx`
+- `src/features/settings/SettingsPanel.tsx`
+- `src/features/settings/RangeSettings.tsx`
+- `src/features/settings/ThemeSettings.tsx`
+- `src/features/timer-rail/RailDecorations.tsx`
+- `src/features/timer-rail/TimerPin.tsx`
+- `src/styles/base.css`
+- `src/styles/tokens.css`
+- `tests/browser/settings.spec.ts`
+- `docs/design-tokens.md`
+- `docs/product-spec.md`
+- `docs/progress.md`
+
 ## 2026-09-15 카운트다운 이동 최적화
 
 ### 완료

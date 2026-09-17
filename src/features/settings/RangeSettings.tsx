@@ -1,10 +1,6 @@
-import { Check, Minus, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 
-import {
-  formatTimeLabel,
-  rangeMinutesToMs,
-  stepRangeMinutes,
-} from "@/domain/timer/timerMath";
+import { stepRangeMinutes } from "@/domain/timer/timerMath";
 import {
   MAX_RANGE_MINUTES,
   MIN_RANGE_MINUTES,
@@ -24,7 +20,7 @@ export function RangeSettings({
         <h2 id="range-title">시간 범위</h2>
         <span>5분 — 24시간</span>
       </div>
-      <p>카운트다운 레일의 가장 위쪽 시간이에요.</p>
+      <p>시간 레일의 가장 위쪽에 표시할 시간이에요.</p>
       <div className="range-stepper" aria-label="시간 범위 조정">
         <button
           className="icon-button"
@@ -52,15 +48,7 @@ export function RangeSettings({
         </button>
       </div>
       <p className="range-step-hint">1시간 미만은 5분씩, 이후에는 1시간씩</p>
-      <div className="range-preview" aria-hidden="true">
-        <span>0</span>
-        <i />
-        <span>{formatTimeLabel(rangeMinutesToMs(rangeMinutes))}</span>
-      </div>
-      <p className="range-note">
-        <Check className="icon icon-sm" /> 진행 중인 타이머의 종료 시각은
-        유지돼요.
-      </p>
+      <p className="range-note">진행 중인 타이머의 종료 시각은 유지돼요.</p>
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { ArrowUp, ChevronUp, MoveVertical } from "lucide-react";
+import { ArrowUp, MoveVertical } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import {
@@ -32,16 +32,9 @@ export function RailDecorations({
       )}
       {empty && draft === null && (
         <div className="rail-empty" aria-hidden="true">
-          <span className="empty-trail">
-            <ChevronUp className="icon" />
-            <ChevronUp className="icon" />
-            <ChevronUp className="icon" />
-          </span>
-          <span>
-            이만큼의 여유,
-            <br />
-            슬라이드 한 번으로.
-          </span>
+          <ArrowUp className="icon icon-lg" />
+          <strong>필요한 시간만큼</strong>
+          <span>아래 핀을 위로 끌어보세요.</span>
         </div>
       )}
       <button
@@ -53,13 +46,9 @@ export function RailDecorations({
         <ArrowUp className="icon icon-xl" />
       </button>
       <div className="start-caption">
-        <strong>
-          {ending ? "여기서 놓으면 종료돼요" : "새로운 시간 시작하기"}
-        </strong>
+        <strong>{ending ? "놓으면 조기 종료" : "끌어서 시작"}</strong>
         <span>
-          {draft === null
-            ? "시작 핀을 위로 끌어보세요"
-            : "손을 떼면 바로 적용돼요"}
+          {draft === null ? "위로 올리고 놓으세요" : "손을 떼면 바로 적용돼요"}
         </span>
       </div>
     </>

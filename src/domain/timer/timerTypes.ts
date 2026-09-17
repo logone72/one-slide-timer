@@ -12,9 +12,9 @@ export const TIMER_COLORS = [
 ] as const;
 
 export const THEMES = [
+  { id: "white", name: "화이트", description: "기본 · 깨끗하고 선명하게" },
   { id: "forest", name: "포레스트", description: "싱그럽고 편안하게" },
   { id: "ocean", name: "오션", description: "맑고 시원하게" },
-  { id: "lavender", name: "라벤더", description: "부드럽고 차분하게" },
   {
     id: "midnight",
     name: "미드나이트",
@@ -46,5 +46,5 @@ export type AppSettings = {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   rangeMinutes: DEFAULT_RANGE_MINUTES,
-  theme: "forest",
+  theme: "white",
 };

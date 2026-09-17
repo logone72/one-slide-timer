@@ -65,7 +65,7 @@ test("migrates hours and steps in minutes without changing a running deadline", 
       (key) => JSON.parse(localStorage.getItem(key) ?? "{}") as unknown,
       SETTINGS_KEY
     )
-  ).toEqual({ rangeMinutes: 5, theme: "forest" });
+  ).toEqual({ rangeMinutes: 5, theme: "white" });
   const timers = await page.evaluate(
     (key) =>
       JSON.parse(localStorage.getItem(key) ?? "[]") as Array<{
@@ -90,9 +90,9 @@ test("all four themes apply to the entire app, persist, and support keyboard sel
   await page.goto("/");
   const surfaces = new Set<string>();
   for (const [id, name] of [
+    ["white", "화이트"],
     ["forest", "포레스트"],
     ["ocean", "오션"],
-    ["lavender", "라벤더"],
     ["midnight", "미드나이트"],
   ]) {
     await page.getByRole("button", { name: "설정 열기" }).click();
@@ -118,11 +118,11 @@ test("all four themes apply to the entire app, persist, and support keyboard sel
   await page.getByRole("button", { name: "설정 열기" }).click();
   await page.getByRole("radio", { name: /미드나이트/ }).focus();
   await page.keyboard.press("ArrowLeft");
-  await expect(page.getByRole("radio", { name: /라벤더/ })).toBeChecked();
-  await expect(page.getByRole("radio", { name: /라벤더/ })).toBeFocused();
+  await expect(page.getByRole("radio", { name: /오션/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: /오션/ })).toBeFocused();
 });
 
-for (const theme of ["forest", "ocean", "lavender", "midnight"]) {
+for (const theme of ["white", "forest", "ocean", "midnight"]) {
   test(`${theme} keeps timer and completion colors readable`, async ({
     page,
   }) => {
@@ -150,12 +150,13 @@ for (const theme of ["forest", "ocean", "lavender", "midnight"]) {
     }, theme);
     await page.goto("/");
     const pairs = await page.locator(".timer-pin").evaluateAll((cards) =>
-      cards.map((card) => ({
-        foreground: getComputedStyle(
-          card.querySelector(".timer-pin__time") ?? card
-        ).color,
-        background: getComputedStyle(card).backgroundColor,
-      }))
+      cards.flatMap((card) =>
+        [".timer-pin__time", ".timer-pin__detail"].map((selector) => ({
+          foreground: getComputedStyle(card.querySelector(selector) ?? card)
+            .color,
+          background: getComputedStyle(card).backgroundColor,
+        }))
+      )
     );
     for (const pair of pairs) {
       expect(contrast(pair.foreground, pair.background)).toBeGreaterThanOrEqual(

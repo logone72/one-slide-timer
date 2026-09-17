@@ -1,19 +1,39 @@
 /* 원시 값 → 의미 토큰 → 컴포넌트 토큰. 사용 지침: docs/design-tokens.md */
 
 :root,
+[data-theme="white"] {
+  color-scheme: light;
+  --color-page: #f5f5f7;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f5f5f7;
+  --color-text: #1d1d1f;
+  --color-text-muted: #626267;
+  --color-border: #e5e5ea;
+  --color-control-border: #85858b;
+  --color-accent: #0066cc;
+  --color-accent-decoration: #94bff0;
+  --color-rail-mark: var(--color-control-border);
+  --color-danger: #b42323;
+  --color-danger-soft: #ffebeb;
+  --color-timer-1: #0066cc;
+  --color-timer-2: #287b47;
+  --color-timer-3: #a65300;
+  --color-timer-4: #7a4eb2;
+  --color-timer-5: #ad3c65;
+}
+
 [data-theme="forest"] {
   color-scheme: light;
   --color-page: #e7ece8;
   --color-surface: #fafbf7;
   --color-surface-raised: #f0f3e9;
   --color-text: #263b34;
-  --color-text-muted: #626f65;
+  --color-text-muted: #56655b;
   --color-border: #dce4d4;
+  --color-control-border: #78857c;
   --color-accent: #436b45;
-  --color-accent-soft: #d4f3a7;
-  --color-on-accent: #3d5b36;
   --color-accent-decoration: #9cbe76;
-  --color-rail-mark: #9ba88f;
+  --color-rail-mark: var(--color-control-border);
   --color-danger: #a35434;
   --color-danger-soft: #f7dacb;
   --color-timer-1: #216f5f;
@@ -29,13 +49,12 @@
   --color-surface: #f5f9fc;
   --color-surface-raised: #eaf2f8;
   --color-text: #233e51;
-  --color-text-muted: #5b7181;
+  --color-text-muted: #536978;
   --color-border: #d0dfeb;
+  --color-control-border: #748695;
   --color-accent: #256989;
-  --color-accent-soft: #bee7fa;
-  --color-on-accent: #214e69;
   --color-accent-decoration: #7bb8d8;
-  --color-rail-mark: #92abbc;
+  --color-rail-mark: var(--color-control-border);
   --color-danger: #a14d3f;
   --color-danger-soft: #f7ddd5;
   --color-timer-1: #1b6794;
@@ -43,28 +62,6 @@
   --color-timer-3: #6e54a2;
   --color-timer-4: #935029;
   --color-timer-5: #99475c;
-}
-
-[data-theme="lavender"] {
-  color-scheme: light;
-  --color-page: #eae4f1;
-  --color-surface: #faf7fd;
-  --color-surface-raised: #f1eaf7;
-  --color-text: #40334e;
-  --color-text-muted: #73617f;
-  --color-border: #e2d5ed;
-  --color-accent: #785497;
-  --color-accent-soft: #e6d2fa;
-  --color-on-accent: #644179;
-  --color-accent-decoration: #b495cf;
-  --color-rail-mark: #b19cbc;
-  --color-danger: #a34c54;
-  --color-danger-soft: #f8dce2;
-  --color-timer-1: #74529a;
-  --color-timer-2: #93486d;
-  --color-timer-3: #356b63;
-  --color-timer-4: #90522b;
-  --color-timer-5: #4061a1;
 }
 
 [data-theme="midnight"] {
@@ -75,11 +72,10 @@
   --color-text: #edf0f6;
   --color-text-muted: #aab6c4;
   --color-border: #3a495e;
+  --color-control-border: #73859c;
   --color-accent: #a9c4fa;
-  --color-accent-soft: #adc7ff;
-  --color-on-accent: #24354f;
   --color-accent-decoration: #819dce;
-  --color-rail-mark: #6e829e;
+  --color-rail-mark: var(--color-control-border);
   --color-danger: #fac0ac;
   --color-danger-soft: #583c3b;
   --color-timer-1: #a6c8fc;
@@ -98,33 +94,25 @@
     var(--color-surface)
   );
   --color-focus: var(--color-accent);
-  --color-primary: var(--color-text);
+  --color-primary: var(--color-accent);
   --color-on-primary: var(--color-surface);
   --color-primary-hover: color-mix(
     in srgb,
-    var(--color-primary) 85%,
+    var(--color-primary) 92%,
     var(--color-surface)
   );
   --color-on-primary-hover: color-mix(
     in srgb,
-    var(--color-on-primary) 12%,
+    var(--color-on-primary) 8%,
     transparent
   );
-  --color-start-hover: color-mix(
-    in srgb,
-    var(--color-accent-soft) 85%,
-    var(--color-accent)
-  );
+  --color-start-hover: var(--color-primary-hover);
   --color-start-halo: color-mix(
     in srgb,
     var(--color-accent) 18%,
     var(--color-surface)
   );
-  --color-rail: color-mix(
-    in srgb,
-    var(--color-accent) 18%,
-    var(--color-surface)
-  );
+  --color-rail: var(--color-control-border);
   --color-backdrop: color-mix(in srgb, var(--color-page) 65%, transparent);
   --shadow-soft: 0 4px 16px
     color-mix(in srgb, var(--color-text) 4%, transparent);
@@ -144,38 +132,32 @@
 
 :root {
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-size-micro: 8px;
-  --font-size-caption: 10px;
-  --font-size-small: 11px;
-  --font-size-body: 12px;
-  --font-size-label: 13px;
-  --font-size-section: 14px;
-  --font-size-unit: 15px;
+  --font-size-micro: 12px;
+  --font-size-caption: 12px;
+  --font-size-small: 14px;
+  --font-size-body: 14px;
+  --font-size-label: 14px;
+  --font-size-section: 16px;
+  --font-size-unit: 16px;
   --font-size-brand: 21px;
-  --font-size-timer-compact: 22px;
-  --font-size-timer: 25px;
-  --font-size-dialog-title: 27px;
+  --font-size-timer-compact: 24px;
+  --font-size-timer: 28px;
+  --font-size-dialog-title: 28px;
   --font-size-draft: 29px;
-  --font-size-heading-compact: 30px;
-  --font-size-heading: 32px;
-  --font-size-hero: 34px;
-  --font-size-range: 62px;
-  --font-weight-light: 450;
-  --font-weight-medium: 550;
+  --font-size-heading: 28px;
+  --font-size-range: 48px;
+  --font-weight-regular: 400;
   --font-weight-semibold: 600;
-  --font-weight-bold: 650;
   --line-height-solid: 1;
   --line-height-tight: 1.1;
   --line-height-heading: 1.25;
   --line-height-body: 1.6;
   --line-height-relaxed: 1.8;
-  --tracking-body: -0.25px;
-  --tracking-label: -0.4px;
-  --tracking-heading: -1px;
-  --tracking-hero: -1.8px;
-  --tracking-range: -3px;
-  --tracking-eyebrow: 1.6px;
-  --tracking-brand: 3px;
+  --tracking-body: 0;
+  --tracking-label: 0;
+  --tracking-heading: -0.5px;
+  --tracking-range: -1.5px;
+  --tracking-brand: 0;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -191,7 +173,6 @@
   --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 14px;
-  --radius-lg: 22px;
   --radius-dialog: 25px;
   --radius-shell: 30px;
   --radius-round: 50%;
@@ -205,17 +186,16 @@
   --icon-lg: 24px;
   --icon-xl: 28px;
   --icon-stroke: 1.8;
-  --size-touch: 44px;
+  --size-touch: 48px;
   --size-stepper: 48px;
-  --size-button: 50px;
-  --size-completion-icon: 64px;
+  --size-button: 48px;
   --size-status-dot: 5px;
   --size-dot: 8px;
   --app-min-width: 320px;
   --app-max-width: 430px;
   --app-max-height: 900px;
-  --app-inset-top: 26px;
-  --app-inset-inline: var(--space-7);
+  --app-inset-top: 24px;
+  --app-inset-inline: var(--space-6);
   --app-inset-bottom: var(--space-5);
   --app-desktop-gutter: 48px;
   --dialog-max-width: 354px;
@@ -225,7 +205,7 @@
   --rail-min-height: 240px;
   --rail-footer-space: 88px;
   --rail-footer-space-compact: 72px;
-  --rail-width: 4px;
+  --rail-width: 2px;
   --rail-tick-offset: 17px;
   --rail-major-offset: 24px;
   --rail-tick-width: 6px;
@@ -233,13 +213,14 @@
   --rail-scale-width: 62px;
   --rail-caption-offset: 44px;
   --rail-caption-offset-compact: 37px;
-  --rail-label-height: 60px;
-  --rail-label-pitch: 68px;
+  --rail-label-height: 72px;
+  --rail-label-pitch: 80px;
+  --rail-color-stripe: 6px;
   --rail-bottom-clearance: 32px;
-  --rail-connector-width: 28px;
+  --rail-connector-width: 24px;
   --rail-dot-size: 20px;
   --rail-dot-border: 5px;
-  --rail-start-size: 58px;
+  --rail-start-size: 64px;
   --rail-start-halo: 8px;
   --rail-draft-size: 40px;
   --rail-draft-top-clearance: 32px;
@@ -249,18 +230,21 @@
   --brand-bar-height-tall: 31px;
   --brand-bar-height-short: 12px;
   --brand-tilt: 16deg;
-  --theme-preview-height: 88px;
+  --theme-preview-height: 56px;
   --theme-preview-rail-x: 25%;
   --motion-fast: 150ms;
   --motion-control: 180ms;
   --motion-enter: 280ms;
+  --motion-settle: 360ms;
+  --motion-hint: 2400ms;
   --motion-reveal: 600ms;
   --motion-bell: 2s;
-  --motion-breathe: 2.8s;
   --motion-pulse: 3s;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ease-in-out: ease-in-out;
   --motion-press-scale: 0.97;
+  --motion-lift-scale: 1.025;
+  --motion-drop-scale: 0.94;
+  --motion-dot-scale: 1.2;
   --motion-alert-scale: 0.95;
   --motion-pulse-from: 0.93;
   --motion-pulse-to: 1.2;
@@ -278,19 +262,11 @@
 
 .timer-item,
 .timer-draft {
-  --timer-surface: color-mix(
-    in srgb,
-    var(--timer-color) 7%,
-    var(--color-surface)
-  );
-  --timer-border: color-mix(
-    in srgb,
-    var(--timer-color) 18%,
-    var(--color-surface)
-  );
+  --timer-surface: var(--color-surface);
+  --timer-border: var(--color-control-border);
   --timer-hover: color-mix(
     in srgb,
-    var(--timer-color) 13%,
+    var(--timer-color) 6%,
     var(--color-surface)
   );
   --timer-dot-border: color-mix(in srgb, var(--timer-color) 30%, transparent);
