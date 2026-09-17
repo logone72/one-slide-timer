@@ -27,7 +27,7 @@ export function handleRailKey(
   if (event.key === "Enter") {
     if (current !== null) {
       event.preventDefault();
-      railGesture.commitGesture(actor, options);
+      actor.send({ type: "COMMIT" });
     }
     return;
   }
@@ -36,11 +36,11 @@ export function handleRailKey(
   const next = adjustWithKeyboard(gesture, event, options.rangeMinutes);
   if (current === null) {
     actor.send({
-      type: timer === undefined ? "START_CREATING" : "START_EDITING",
+      type: "START",
       gesture: next,
     });
   } else {
-    actor.send({ type: "MOVE", gesture: next });
+    actor.send({ type: "MOVE", durationMs: next.durationMs });
   }
 }
 

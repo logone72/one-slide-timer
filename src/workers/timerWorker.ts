@@ -1,8 +1,12 @@
-import { TIMER_TICK_MS } from "@/domain/timer/timerTypes";
+import { startTimerTicks } from "./timerTicker";
 
 const tick = (): void => {
   self.postMessage({ type: "tick" });
 };
 
-tick();
-setInterval(tick, TIMER_TICK_MS);
+let stop: (() => void) | undefined;
+self.onmessage = (event: MessageEvent<number[]>): void => {
+  stop?.();
+  tick();
+  stop = startTimerTicks(tick, event.data);
+};

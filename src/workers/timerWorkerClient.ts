@@ -1,8 +1,9 @@
-import { TIMER_TICK_MS } from "@/domain/timer/timerTypes";
+import { startTimerTicks } from "./timerTicker";
 
-export function startTimerWorker(onTick: () => void): () => void {
+export function startTimerWorker(onTick: () => void) {
   let worker: Worker | undefined;
-  let interval: number | undefined;
+  let endTimes: number[] = [];
+  let stopTicks: (() => void) | undefined;
   let disposed = false;
   const stopWorker = (): void => {
     worker?.removeEventListener("message", onTick);
@@ -16,7 +17,7 @@ export function startTimerWorker(onTick: () => void): () => void {
       return;
     }
     stopWorker();
-    interval ??= window.setInterval(onTick, TIMER_TICK_MS);
+    stopTicks ??= startTimerTicks(onTick, endTimes);
   };
   try {
     worker = new Worker(new URL("./timerWorker.ts", import.meta.url), {
@@ -28,9 +29,27 @@ export function startTimerWorker(onTick: () => void): () => void {
   } catch {
     fallback();
   }
-  return () => {
-    disposed = true;
-    stopWorker();
-    window.clearInterval(interval);
+  return {
+    update: (nextEndTimes: number[]): void => {
+      if (disposed) {
+        return;
+      }
+      endTimes = nextEndTimes;
+      if (worker === undefined) {
+        stopTicks?.();
+        stopTicks = startTimerTicks(onTick, endTimes);
+      } else {
+        try {
+          worker.postMessage(endTimes);
+        } catch {
+          fallback();
+        }
+      }
+    },
+    stop: (): void => {
+      disposed = true;
+      stopWorker();
+      stopTicks?.();
+    },
   };
 }

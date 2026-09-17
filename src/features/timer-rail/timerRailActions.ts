@@ -1,15 +1,16 @@
 import type { RefObject } from "react";
 import type { ActorRefFrom } from "xstate";
 
-import type { appMachine } from "@/app/appMachine";
 import type { TimerRecord } from "@/domain/timer/timerTypes";
-export type RailActor = ActorRefFrom<typeof appMachine>;
+
+import type * as interaction from "./railInteractionMachine";
+
+export type RailActor = ActorRefFrom<typeof interaction.railInteractionMachine>;
 export type RailOptions = {
   railRef: RefObject<HTMLDivElement | null>;
   timers: TimerRecord[];
   rangeMinutes: number;
   color: string;
-  onStartAdjust: () => void;
   onCreateTimer: (durationMs: number, color: string) => void;
   onUpdateTimer: (timerId: string, durationMs: number) => void;
 };
@@ -22,15 +23,13 @@ export function findTargetTimer(
   return timers.find((timer) => timer.id === id);
 }
 
-export function commitGesture(actor: RailActor, options: RailOptions): void {
-  const gesture = actor.getSnapshot().context.gesture;
-  if (gesture === null) {
-    return;
+export function commitTimer(
+  change: interaction.TimerChange,
+  options: RailOptions
+): void {
+  if (change.timerId !== null) {
+    options.onUpdateTimer(change.timerId, change.durationMs);
+  } else if (change.durationMs > 0) {
+    options.onCreateTimer(change.durationMs, change.color);
   }
-  if (gesture.timerId !== null) {
-    options.onUpdateTimer(gesture.timerId, gesture.durationMs);
-  } else if (gesture.durationMs > 0) {
-    options.onCreateTimer(gesture.durationMs, gesture.color);
-  }
-  actor.send({ type: "FINISH" });
 }

@@ -2,6 +2,47 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-17 첫 카운트다운 표시 지연 수정
+
+- 공통 1초 갱신과 초 올림 표시가 어긋나 첫 숫자 감소가 약 1.9초 뒤에 보이는 문제를 수정했다. 종료 시각이나 올림 표시는 바꾸지 않고 각 타이머의 다음 초 경계에 갱신을 예약한다.
+- `timerTicker.ts`의 단일 예약 함수를 Worker와 메인 스레드 폴백이 공유한다. 새 타이머·시간 수정·저장 복구 때 종료 시각 목록만 전달하며 Worker는 재생성하지 않는다. 서로 다른 초 경계가 있으면 해당 시점마다 갱신하고, 콜백 지연 후에는 실제 시각에서 다음 경계를 다시 계산한다.
+- 기존 transform 보간과 동작 줄이기 설정을 유지했다. 매 프레임 React 상태를 갱신하거나 일정한 고빈도로 폴링하지 않는다.
+- 수정 전 브라우저 회귀 검사에서 시작 후 정확히 1초 시점의 `00:09` 기대값에 `00:10`이 남는 실패를 확인했다. 수정 후 Chromium·모바일 WebKit에서 시작, 병렬 타이머, 시간 수정의 초 경계 검사가 통과했다.
+- 실제 Worker 재측정에서 첫 숫자 감소는 Chromium 1,011ms, WebKit 1,018ms였다. 두 번째 감소는 각각 2,009ms, 2,018ms였다. 로컬 브라우저 측정이며 모든 기기의 프레임 지연을 보장하는 수치는 아니다.
+- `npm run verify`: lint 경고 0개, 포맷, 타입 검사, 단위 테스트 37개 통과. 프로덕션 빌드와 전체 브라우저 검사 50개 통과. Worker 실패 후 초 경계 유지, 서로 다른 종료 시각, 수정 시 재예약, 콜백 지연 후 복구와 정리 후 중단도 검사했다.
+- 변경 파일: `src/app/useTimers.ts`, `src/workers/timerTicker.ts`, `src/workers/timerWorker.ts`, `src/workers/timerWorkerClient.ts`, `src/workers/timerWorkerClient.test.ts`, `tests/browser/timer-tick.spec.ts`, `docs/product-spec.md`, `docs/project-structure.md`, `docs/progress.md`.
+
+## 2026-09-17 XState 레일 상호작용 리팩터링
+
+### 구현
+
+- `appMachine`을 레일 기능 내부의 `railInteractionMachine`으로 옮기고, 연결 훅을 `useRailInteraction`으로 바꿨다.
+- 시간 조정 화면의 열림 상태를 머신에 통합했다. 화면 진입 시 미리보기와 메뉴 선택을 함께 정리하며, 슬라이더 입력값은 기존처럼 조정 화면의 로컬 상태에 둔다.
+- 포인터와 키보드가 공통 `START` 이벤트를 사용하고, 머신이 생성·편집을 선택한다. 이동 이벤트는 시간만 바꾸므로 조작 대상과 색상은 유지된다. 탭·드래그 구분에 따른 메뉴 표시·시간 조정·확정도 머신에서 결정한다.
+- 포인터·키보드·시간 조정의 확정은 공통 `commitTimer` 액션에서 최신 생성·수정 콜백으로 위임한다. 조작이 끝나면 대기로 전환하여 중복 확정을 무시한다. 신규 0초는 생성하지 않고 기존 타이머의 0초는 조기 종료한다.
+- 포인터 취소·캡처 상실·Escape·화면 전환은 미리보기를 저장 없이 정리한다. 시간 조정 창의 포커스 변화는 창을 닫지 않으며 Escape는 네이티브 대화상자의 취소로 처리한다. 조정 중인 타이머가 완료되면 조정 상태도 정리하여 다음 조작이 막히지 않게 한다.
+- 화면 구성, 타이머 저장 형식, 시간 계산, 1초 갱신과 transform 보간은 유지했다. 새 의존성은 추가하지 않았다.
+
+### 검증
+
+- `npm run verify`: lint 경고 0개, Prettier, TypeScript 및 단위 테스트 35개 통과. 새 상태 전환 테스트 10개는 중복 시작·확정, 마지막 이동값 적용, 대상·색상 보존, 0초 처리, 취소, 탭과 시간 조정 진입을 확인한다.
+- `npm run verify:browser`: 프로덕션 빌드 및 Chromium·모바일 WebKit 브라우저 검사 48개 통과. 기존 드래그·키보드·초점 복귀·애니메이션 검사에 포인터 중단, 조정 화면에서 Escape 취소, 조정 중 완료 후 새 타이머 생성 검사를 추가했다. 모바일 WebKit의 시작 핀 탭도 확인했다.
+- 실제 iPhone 기기의 OS 인터럽트 검증은 포함하지 않는다. 포인터 취소·캡처 상실·화면 전환 검사는 브라우저에서 해당 이벤트를 전달하여 검증했다.
+
+### 변경 파일
+
+- `src/app/appMachine.ts` → `src/features/timer-rail/railInteractionMachine.ts`
+- `src/features/timer-rail/useRailGesture.ts` → `src/features/timer-rail/useRailInteraction.ts`
+- `src/features/timer-rail/TimerRail.tsx`
+- `src/features/timer-rail/timerRailActions.ts`
+- `src/features/timer-rail/timerRailKeyboard.ts`
+- `src/features/timer-rail/railInteractionMachine.test.ts`
+- `tests/browser/rail-interaction.spec.ts`
+- `AGENTS.md`
+- `docs/product-spec.md`
+- `docs/project-structure.md`
+- `docs/progress.md`
+
 ## 2026-09-17 KISS·DRY·SSOT 리팩터링 8단계
 
 ### 구현

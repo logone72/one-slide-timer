@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { remainingMs } from "@/domain/timer/timerMath";
 import { loadTimers, saveTimers } from "@/domain/timer/timerStorage";
@@ -19,6 +19,7 @@ export function useTimers() {
   const refresh = useCallback(() => setNow(Date.now()), []);
   const store = useStoredState(loadTimers, saveTimers, [], mergeTimers);
   const timers = store.value;
+  const ticker = useRef<ReturnType<typeof startTimerWorker> | null>(null);
   const runningTimers = timers.filter(
     (timer) => remainingMs(timer.endAt, now) > 0
   );
@@ -30,7 +31,17 @@ export function useTimers() {
     completedTimers.length > 0,
     refresh
   );
-  useEffect(() => startTimerWorker(refresh), [refresh]);
+  useEffect(() => {
+    const client = startTimerWorker(refresh);
+    ticker.current = client;
+    return () => {
+      client.stop();
+      ticker.current = null;
+    };
+  }, [refresh]);
+  useEffect(() => {
+    ticker.current?.update(timers.map((timer) => timer.endAt));
+  }, [timers]);
   useEffect(() => {
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);

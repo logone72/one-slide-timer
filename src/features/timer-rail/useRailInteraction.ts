@@ -1,15 +1,30 @@
 import { useMachine } from "@xstate/react";
 import { type KeyboardEvent, type PointerEvent, useEffect } from "react";
 
-import { appMachine } from "@/app/appMachine";
-
+import { railInteractionMachine } from "./railInteractionMachine";
 import * as railGesture from "./timerRailActions";
 import { createGesture, getGestureDuration } from "./timerRailGeometry";
 import { handleRailKey } from "./timerRailKeyboard";
 
-export function useRailGesture(options: railGesture.RailOptions) {
-  const [state, send, actor] = useMachine(appMachine);
+export function useRailInteraction(options: railGesture.RailOptions) {
+  const [state, send, actor] = useMachine(
+    railInteractionMachine.provide({
+      actions: {
+        commitTimer: (_, change) => railGesture.commitTimer(change, options),
+      },
+    })
+  );
   useGestureCancellation(actor);
+  const adjustingId = state.context.adjustingId;
+  useEffect(() => {
+    if (
+      adjustingId !== null &&
+      adjustingId !== "new" &&
+      !options.timers.some((timer) => timer.id === adjustingId)
+    ) {
+      send({ type: "CANCEL" });
+    }
+  }, [adjustingId, options.timers, send]);
   const cancel = (): void => send({ type: "CANCEL" });
   const select = (id: string): void => send({ type: "SHOW_ACTIONS", id });
   const pointerMove = (event: PointerEvent<HTMLDivElement>): void => {
@@ -26,16 +41,12 @@ export function useRailGesture(options: railGesture.RailOptions) {
     if (moved) {
       send({
         type: "MOVE",
-        gesture: {
-          ...current,
-          moved,
-          durationMs: getGestureDuration(
-            current,
-            event.clientY,
-            rail,
-            options.rangeMinutes
-          ),
-        },
+        durationMs: getGestureDuration(
+          current,
+          event.clientY,
+          rail,
+          options.rangeMinutes
+        ),
       });
     }
   };
@@ -45,14 +56,7 @@ export function useRailGesture(options: railGesture.RailOptions) {
     if (current?.pointerId !== event.pointerId) {
       return;
     }
-    if (current.timerId !== null && !current.moved) {
-      select(current.timerId);
-    } else if (current.timerId === null && !current.moved) {
-      cancel();
-      options.onStartAdjust();
-    } else {
-      railGesture.commitGesture(actor, options);
-    }
+    send({ type: "RELEASE" });
   };
   const current = state.context.gesture;
   const draft =
@@ -62,6 +66,14 @@ export function useRailGesture(options: railGesture.RailOptions) {
   return {
     draft,
     selectedId: state.context.selectedId,
+    adjustingId: state.context.adjustingId,
+    openAdjustment: (id: string) => send({ type: "OPEN_ADJUSTMENT", id }),
+    applyAdjustment: (durationMs: number) =>
+      send({
+        type: "APPLY_ADJUSTMENT",
+        durationMs,
+        color: options.color,
+      }),
     select,
     cancel,
     editing: state.matches("editingTimer"),
@@ -96,24 +108,19 @@ function startPointer(
     return;
   }
   const timer = railGesture.findTargetTimer(target, options.timers);
-  if (actor.getSnapshot().context.selectedId !== null && timer === undefined) {
-    actor.send({ type: "CANCEL" });
-    return;
-  }
   const next = createGesture(timer, options.color, Date.now());
   next.pointerId = event.pointerId;
   next.startY = event.clientY;
-  event.preventDefault();
-  event.currentTarget.setPointerCapture(event.pointerId);
-  actor.send({
-    type: next.timerId === null ? "START_CREATING" : "START_EDITING",
-    gesture: next,
-  });
+  actor.send({ type: "START", gesture: next });
+  if (actor.getSnapshot().context.gesture !== null) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
 }
 
 function useGestureCancellation(actor: railGesture.RailActor): void {
   useEffect(() => {
-    const reset = (): void => actor.send({ type: "CANCEL" });
+    const reset = (): void => actor.send({ type: "INTERRUPT" });
     const onKey = (event: globalThis.KeyboardEvent): void => {
       if (event.key === "Escape") {
         reset();

@@ -1,4 +1,4 @@
-import { type CSSProperties, useRef, useState } from "react";
+import { type CSSProperties, useRef } from "react";
 
 import {
   type AppSettings,
@@ -9,7 +9,7 @@ import {
 import { RailDecorations, RailHelp } from "./RailDecorations";
 import { TimerAdjustment } from "./TimerAdjustment";
 import { TimerPin } from "./TimerPin";
-import { useRailGesture } from "./useRailGesture";
+import { useRailInteraction } from "./useRailInteraction";
 import { useRailLayout } from "./useRailLayout";
 
 type TimerRailProps = {
@@ -29,18 +29,16 @@ export function TimerRail({
   onUpdateTimer,
   onDismissTimer,
 }: TimerRailProps) {
-  const [adjusting, setAdjusting] = useState<string | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const color =
     TIMER_COLORS[timers.length % TIMER_COLORS.length] ?? TIMER_COLORS[0];
-  const gesture = useRailGesture({
+  const interaction = useRailInteraction({
     railRef,
     timers,
     rangeMinutes: settings.rangeMinutes,
     color,
     onCreateTimer,
     onUpdateTimer,
-    onStartAdjust: () => setAdjusting("new"),
   });
   const { height, motions, pitch } = useRailLayout(
     railRef,
@@ -48,8 +46,8 @@ export function TimerRail({
     now,
     settings.rangeMinutes
   );
-  const draft = gesture.draft;
-  const ending = gesture.editing && draft?.durationMs === 0;
+  const draft = interaction.draft;
+  const ending = interaction.editing && draft?.durationMs === 0;
 
   return (
     <section
@@ -67,7 +65,7 @@ export function TimerRail({
             "--rail-height": `${String(height)}px`,
           } as CSSProperties
         }
-        {...gesture.handlers}
+        {...interaction.handlers}
       >
         <RailDecorations
           draft={draft}
@@ -75,10 +73,7 @@ export function TimerRail({
           height={height}
           empty={timers.length === 0}
           ending={ending}
-          onStartAdjust={() => {
-            gesture.cancel();
-            setAdjusting("new");
-          }}
+          onStartAdjust={() => interaction.openAdjustment("new")}
         />
         {timers.map((timer) => (
           <TimerPin
@@ -87,33 +82,23 @@ export function TimerRail({
             now={now}
             motion={motions.get(timer.id)}
             editing={draft?.timerId === timer.id}
-            selected={gesture.selectedId === timer.id}
-            onSelect={() => gesture.select(timer.id)}
-            onClose={gesture.cancel}
-            onAdjust={() => {
-              setAdjusting(timer.id);
-              gesture.cancel();
-            }}
+            selected={interaction.selectedId === timer.id}
+            onSelect={() => interaction.select(timer.id)}
+            onClose={interaction.cancel}
+            onAdjust={() => interaction.openAdjustment(timer.id)}
             onDismiss={() => {
               onDismissTimer(timer.id);
-              gesture.cancel();
+              interaction.cancel();
             }}
           />
         ))}
       </div>
       <TimerAdjustment
-        timerId={adjusting}
+        timerId={interaction.adjustingId}
         timers={timers}
         rangeMinutes={settings.rangeMinutes}
-        onClose={() => setAdjusting(null)}
-        onApply={(duration) => {
-          if (adjusting === "new") {
-            onCreateTimer(duration, color);
-          } else if (adjusting !== null) {
-            onUpdateTimer(adjusting, duration);
-          }
-          setAdjusting(null);
-        }}
+        onClose={interaction.cancel}
+        onApply={interaction.applyAdjustment}
       />
       <RailHelp running={timers.length > 0} />
     </section>

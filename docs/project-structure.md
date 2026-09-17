@@ -53,7 +53,6 @@ one-slide-timer/
 src/
   app/
     App.tsx
-    appMachine.ts
     useTimers.ts
     useSettings.ts
     useStoredState.ts
@@ -74,7 +73,9 @@ src/
       TimerAdjustment.tsx
       useRailLayout.ts
       RailDecorations.tsx
-      useRailGesture.ts
+      railInteractionMachine.ts
+      railInteractionMachine.test.ts
+      useRailInteraction.ts
       useTimerMotion.ts
       timerRailKeyboard.ts
       timerRailGeometry.ts
@@ -100,6 +101,7 @@ src/
       alertAudio.ts
 
   workers/
+    timerTicker.ts
     timerWorker.ts
     timerWorkerClient.ts
 
@@ -116,12 +118,12 @@ src/
 
 - `app/`: 앱 전체 상태와 화면 조립, 저장 복구와 알림 동기화를 연결한다.
 - `domain/timer/`: 종료 시각, 남은 시간, 10초 스냅, 허용 시간 범위, 저장값 검증·이전을 맡는다. React를 모르게 둔다.
-- `features/timer-rail/`: 시간 레일, 핀 드래그, 라벨 충돌 회피를 맡는다. `useTimerMotion.ts`는 핀·라벨·연결선의 `transform` 보간과 동작 줄이기 설정을 처리한다.
+- `features/timer-rail/`: 시간 레일, 핀 드래그, 라벨 충돌 회피를 맡는다. `railInteractionMachine.ts`는 제스처·타이머 액션·시간 조정 화면의 배타적인 상태 전환을 관리하고, `useRailInteraction.ts`는 DOM 입력과 최신 타이머 생성·수정 콜백을 연결한다. `useTimerMotion.ts`는 핀·라벨·연결선의 `transform` 보간과 동작 줄이기 설정을 처리한다.
 - `features/settings/`: 설정 버튼, 설정 화면, 시간 범위 스테퍼·슬라이더와 색상 테마 선택을 맡는다.
 - `features/completion-alert/`: 완료 알림 병합, 확인 흐름을 맡는다.
 - `platform/notifications/`: 공통 반복 알림음, 웹·Capacitor 예약 어댑터, ID별 예약·취소 순서와 오류 복구를 맡는다.
 - `styles/`: 디자인 토큰, 공통 스타일, 레일·설정·완료 화면별 스타일을 맡는다. 토큰 원시 값은 `tokens.css`에만 선언한다.
-- `workers/`: Web Worker와 UI 사이의 메시지만 맡는다. 타이머의 진실은 항상 `endAt`이다.
+- `workers/`: 종료 시각 목록을 받아 초 경계에 맞춘 UI 갱신 신호를 보낸다. `timerTicker.ts`의 예약 함수를 Worker와 메인 스레드 폴백이 공유하며 Worker는 타이머 변경 때 다시 생성하지 않는다. 타이머의 진실은 항상 `endAt`이다.
 
 `src/` 내부를 가로지르는 import는 `@/` 경로 별칭을 쓴다. 같은 폴더 안의 작은 import는 `./`를 유지한다.
 
@@ -132,7 +134,7 @@ src/
 - 레일, 핀, 라벨, 액션 UI는 DOM/CSS로 만든다.
 - 제스처는 Pointer Events로 처리한다.
 - `canvas`는 첫 버전에 쓰지 않는다. 타이머가 많이 늘어 실제 DOM 성능 문제가 보일 때만 다시 검토한다.
-- XState는 제스처 전환만 맡는다. 진행·완료 여부는 `endAt`에서 계산하며 별도 상태 머신이나 저장 상태를 두지 않는다. 시간 계산, 좌표 변환, 10초 스냅, 라벨 배치는 순수 함수로 둔다.
+- XState는 레일의 제스처·타이머 액션·시간 조정 화면 전환을 맡는다. 조정 화면의 입력값은 React 로컬 상태에 둔다. 진행·완료 여부는 `endAt`에서 계산하며 별도 상태 머신이나 저장 상태를 두지 않는다. 시간 계산, 좌표 변환, 10초 스냅, 라벨 배치는 순수 함수로 둔다.
 
 ## PWA 범위
 
@@ -142,7 +144,7 @@ src/
 
 ## 테스트 기준
 
-- 시간 계산, 제스처 좌표 변환, 저장값 검증·이전, 라벨 충돌 회피, 알림 경쟁 조건·구독 정리, 오디오 활성화, Worker 폴백, 모든 CSS의 토큰 참조는 작은 단위 테스트를 둔다.
+- 시간 계산, 레일 상호작용 상태 전환, 제스처 좌표 변환, 저장값 검증·이전, 라벨 충돌 회피, 알림 경쟁 조건·구독 정리, 오디오 활성화, Worker 폴백, 모든 CSS의 토큰 참조는 작은 단위 테스트를 둔다.
 - Playwright browser smoke 테스트는 Chromium과 모바일 WebKit에서 생성, 편집, 취소, 키보드 조정, 조기 종료, 설정, 완료 알림, PC 최대 너비와 라벨 겹침을 확인한다. 5분·55분·1시간·12시간 경계와 테마 저장·키보드 선택·타이머 글자 대비도 검증한다.
 - 저장 실패·복구, 비드래그 시간 조정과 초점 복귀, 완료 목록 추가, 200% 글자 확대와 빈 레일 스크롤도 브라우저 회귀 검사에 포함한다. 시각의 경계값은 제어된 시계로 검증한다.
 - Playwright browser smoke는 커밋마다 강제하지 않고 배포 전 검증으로 둔다.
