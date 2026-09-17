@@ -131,7 +131,7 @@ test("full-screen settings preserves deadlines, clamps range, and restores focus
   const minus = page.getByRole("button", { name: "시간 범위 줄이기" });
   const plus = page.getByRole("button", { name: "시간 범위 늘리기" });
   await expect(minus).toBeEnabled();
-  for (let index = 1; index < 24; index += 1) {
+  for (let index = 1; index < 12; index += 1) {
     await plus.click();
   }
   await expect(plus).toBeDisabled();
@@ -140,11 +140,11 @@ test("full-screen settings preserves deadlines, clamps range, and restores focus
   await expect(settings).toHaveCount(0);
   await expect(settingsButton).toBeFocused();
   await expect(
-    page.getByLabel("시간 눈금 0부터 24시간", { exact: true })
+    page.getByLabel("시간 눈금 0부터 12시간", { exact: true })
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByLabel("시간 눈금 0부터 24시간", { exact: true })
+    page.getByLabel("시간 눈금 0부터 12시간", { exact: true })
   ).toBeVisible();
   expect(await storedTimers(page)).toEqual(original);
 });

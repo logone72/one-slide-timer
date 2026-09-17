@@ -97,19 +97,21 @@ function DraftPin({
 }
 
 function RailScale({ rangeMinutes }: { rangeMinutes: number }) {
+  const divisions = rangeMinutes < 60 ? 25 : 30;
   return (
     <div
       className="rail-scale"
       aria-label={`시간 눈금 0부터 ${formatTimeLabel(rangeMinutesToMs(rangeMinutes))}`}
     >
-      {Array.from({ length: 31 }, (_, index) => {
+      {Array.from({ length: divisions + 1 }, (_, index) => {
         const major = index % 5 === 0;
-        const duration = rangeMinutesToMs(rangeMinutes) * (1 - index / 30);
+        const duration =
+          rangeMinutesToMs(rangeMinutes) * (1 - index / divisions);
         return (
           <div
             key={index}
             className={`rail-tick${major ? " rail-tick--major" : ""}`}
-            style={{ top: `${String((index / 30) * 100)}%` }}
+            style={{ top: `${String((index / divisions) * 100)}%` }}
           >
             {major && <span>{formatTimeLabel(duration)}</span>}
           </div>

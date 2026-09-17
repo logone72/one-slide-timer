@@ -45,7 +45,7 @@ it("recovers malformed and unsupported settings at the storage boundary", () => 
     "one-slide-timer:settings",
     JSON.stringify({ rangeHours: 100 })
   );
-  expect(loadSettings()).toEqual({ rangeMinutes: 1440, theme: "white" });
+  expect(loadSettings()).toEqual({ rangeMinutes: 720, theme: "white" });
 });
 
 it("replaces retired lavender with white while retaining the selected range", () => {
@@ -57,4 +57,12 @@ it("replaces retired lavender with white while retaining the selected range", ()
   expect(loadSettings()).toEqual({ rangeMinutes: 25, theme: "white" });
   saveSettings({ rangeMinutes: 25, theme: "forest" });
   expect(loadSettings()).toEqual({ rangeMinutes: 25, theme: "forest" });
+});
+
+it("clamps a saved 24-hour range to 12 hours", () => {
+  localStorage.setItem(
+    "one-slide-timer:settings",
+    JSON.stringify({ rangeMinutes: 1440, theme: "ocean" })
+  );
+  expect(loadSettings()).toEqual({ rangeMinutes: 720, theme: "ocean" });
 });

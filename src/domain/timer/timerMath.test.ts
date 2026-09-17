@@ -17,7 +17,7 @@ describe("timer math", () => {
     expect(clampRangeMinutes(0)).toBe(5);
     expect(clampRangeMinutes(12.8)).toBe(15);
     expect(clampRangeMinutes(90)).toBe(120);
-    expect(clampRangeMinutes(9999)).toBe(1440);
+    expect(clampRangeMinutes(9999)).toBe(720);
     expect(clampRangeMinutes(NaN)).toBe(60);
     expect(clampRangeMinutes(Infinity)).toBe(60);
     expect(stepRangeMinutes(5, -1)).toBe(5);
@@ -26,7 +26,7 @@ describe("timer math", () => {
     expect(stepRangeMinutes(60, -1)).toBe(55);
     expect(stepRangeMinutes(60, 1)).toBe(120);
     expect(stepRangeMinutes(120, -1)).toBe(60);
-    expect(stepRangeMinutes(1440, 1)).toBe(1440);
+    expect(stepRangeMinutes(720, 1)).toBe(720);
   });
 
   it("snaps duration to 10 second units", () => {

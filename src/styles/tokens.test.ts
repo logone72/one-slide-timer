@@ -14,6 +14,7 @@ it("keeps shared style values in tokens and defines every referenced token", () 
     "--timer-y",
     "--rail-height",
     "--timer-count",
+    "--range-progress",
   ]);
   const references = [...(base + tokens).matchAll(/var\((--[\w-]+)/g)].map(
     (match) => match[1]

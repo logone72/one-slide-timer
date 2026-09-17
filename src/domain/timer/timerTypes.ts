@@ -2,7 +2,17 @@ export const TIMER_TICK_MS = 1_000;
 export const TIMER_STEP_MS = 10_000;
 export const DEFAULT_RANGE_MINUTES = 60;
 export const MIN_RANGE_MINUTES = 5;
-export const MAX_RANGE_MINUTES = 24 * 60;
+export const MAX_RANGE_MINUTES = 12 * 60;
+export const RANGE_MINUTE_OPTIONS = [
+  ...Array.from(
+    { length: 60 / MIN_RANGE_MINUTES - 1 },
+    (_, index) => (index + 1) * MIN_RANGE_MINUTES
+  ),
+  ...Array.from(
+    { length: MAX_RANGE_MINUTES / 60 },
+    (_, index) => (index + 1) * 60
+  ),
+];
 export const TIMER_COLORS = [
   "var(--color-timer-1)",
   "var(--color-timer-2)",

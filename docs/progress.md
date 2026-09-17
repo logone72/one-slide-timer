@@ -2,6 +2,28 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-17 슬라이더 시각 디자인 정리
+
+- 손잡이의 강조색 원과 두꺼운 테두리를 흰색 26px 손잡이와 얕은 그림자로 바꿨다. 트랙은 연한 중립색으로 두고 선택한 구간만 테마 강조색으로 채운다.
+- ± 버튼을 중립색 원형으로 맞추고 슬라이더와의 간격을 줄였다. 48px 조작 영역과 키보드 조작은 유지한다.
+- 모바일 WebKit에서 화이트·미드나이트 화면과 터치로 12시간 선택을 확인했다. Chromium·모바일 WebKit 브라우저 테스트 26개 통과.
+- 변경 파일: `src/features/settings/RangeSettings.tsx`, `src/styles/base.css`, `src/styles/tokens.css`, `src/styles/tokens.test.ts`, `docs/design-tokens.md`, `docs/progress.md`.
+
+## 2026-09-17 시간 범위 12시간 제한과 슬라이더 손잡이 강조
+
+- 시간 범위 최댓값을 12시간으로 줄였다. 기존 저장 범위가 12시간을 넘으면 설정만 보정하며, 실행 중인 타이머의 종료 시각은 유지한다.
+- 슬라이더 손잡이를 28px 원형의 테마 강조색으로 표시하고 표면색 테두리와 그림자로 트랙과 구분했다. 트랙 6px·손잡이 28px를 토큰으로 관리하며 48px 조작 영역을 유지한다.
+- `npm run verify`의 lint·포맷·타입 검사와 단위 테스트 12개 통과. 기존 브라우저 검사의 최대 범위 클릭 횟수를 수정한 후 Chromium·모바일 WebKit 26개 통과. 모바일 WebKit에서 화이트·미드나이트 표시와 터치로 12시간 선택을 확인했다. 실제 기기 검증은 포함하지 않았다.
+- 변경 파일: `src/domain/timer/timerTypes.ts`, `src/domain/timer/timerMath.test.ts`, `src/domain/timer/timerStorage.test.ts`, `src/features/settings/RangeSettings.tsx`, `src/styles/base.css`, `src/styles/tokens.css`, `tests/browser/app-smoke.spec.ts`, `tests/browser/range-slider.spec.ts`, `AGENTS.md`, `CONTEXT.md`, `docs/product-spec.md`, `docs/design-tokens.md`, `docs/progress.md`.
+
+## 2026-09-17 분 단위 눈금과 시간 범위 슬라이더
+
+- 1시간 미만의 주요 눈금 간격을 5등분해 초 표시를 없앴다. 0은 유지하고, 1시간 이상에서는 기존 6등분을 사용한다.
+- 시간 범위의 ± 버튼 아래에 기본 HTML 슬라이더를 추가했다. 5~~55분은 5분씩, 1~~24시간은 1시간씩 조절하며 버튼과 값·저장을 공유한다. 접근성 이름과 실제 시간 읽기, 48px 조작 영역에 기존 토큰을 적용했다.
+- `npm run verify` 통과: lint·포맷·타입 검사 및 단위 테스트 11개. `npm run verify:browser` 통과: Chromium·모바일 WebKit 26개. 슬라이더와 버튼 동기화, 키보드 경계 이동, 저장, 55분과 1시간 눈금을 검사했다.
+- 모바일 WebKit에서 슬라이더 터치로 시간이 변경됨을 확인했고, 320px 너비에서 가로 넘침이 없었다. 실제 iPhone 기기 검증은 포함하지 않았다.
+- 변경 파일: `src/domain/timer/timerTypes.ts`, `src/features/settings/RangeSettings.tsx`, `src/features/timer-rail/RailDecorations.tsx`, `src/styles/base.css`, `tests/browser/settings.spec.ts`, `tests/browser/range-slider.spec.ts`, `AGENTS.md`, `CONTEXT.md`, `docs/product-spec.md`, `docs/progress.md`.
+
 ## 2026-09-17 레일 상단 점 중앙 정렬
 
 - `.rail-track::before`의 고정 왼쪽 오프셋을 `left: 50%`와 `translateX(-50%)`로 바꿨다. 점의 테두리를 포함한 실제 너비를 기준으로 레일 중앙에 정렬한다.

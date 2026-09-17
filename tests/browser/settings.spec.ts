@@ -52,11 +52,10 @@ test("migrates hours and steps in minutes without changing a running deadline", 
   ).toBeVisible();
   await expect(page.locator(".rail-tick--major span")).toHaveText([
     "5분",
-    "4분 10초",
-    "3분 20초",
-    "2분 30초",
-    "1분 40초",
-    "50초",
+    "4분",
+    "3분",
+    "2분",
+    "1분",
     "0",
   ]);
   await page.reload();

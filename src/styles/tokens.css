@@ -112,6 +112,13 @@
     var(--color-accent) 18%,
     var(--color-surface)
   );
+  --color-slider-track: color-mix(
+    in srgb,
+    var(--color-text) 12%,
+    var(--color-surface)
+  );
+  --color-slider-thumb: #fff;
+  --shadow-slider-thumb: 0 2px 5px #00000026, 0 0 0 0.5px #0000000d;
   --color-rail: var(--color-control-border);
   --color-backdrop: color-mix(in srgb, var(--color-page) 65%, transparent);
   --shadow-soft: 0 4px 16px
@@ -188,6 +195,8 @@
   --icon-stroke: 1.8;
   --size-touch: 48px;
   --size-stepper: 48px;
+  --size-slider-thumb: 26px;
+  --size-slider-track: 6px;
   --size-button: 48px;
   --size-status-dot: 5px;
   --size-dot: 8px;
