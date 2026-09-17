@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/browser",
   timeout: 30_000,
+  workers:
+    process.env.CI === undefined || process.env.CI.length === 0 ? undefined : 2,
   expect: {
     timeout: 5_000,
   },
@@ -17,10 +19,20 @@ export default defineConfig({
       process.env.CI === undefined || process.env.CI.length === 0,
   },
   projects: [
-    { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "desktop-chromium",
+      testIgnore: "**/rail-touch.spec.ts",
+      use: { ...devices["Desktop Chrome"] },
+    },
     {
       name: "mobile-safari",
+      testIgnore: "**/rail-touch.spec.ts",
       use: { ...devices["iPhone 14"] },
+    },
+    {
+      name: "mobile-chromium-touch",
+      testMatch: "**/rail-touch.spec.ts",
+      use: { ...devices["Pixel 7"] },
     },
   ],
 });

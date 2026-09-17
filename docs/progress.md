@@ -2,6 +2,34 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-17 기능 회귀 테스트 보강
+
+- Worker 진입점을 실제 스케줄러와 연결한 단위 테스트와 실제 브라우저 Worker의 초 경계·완료 검사를 추가했다. 기존 폴백 경계 검사도 유지했다.
+- 완료부터 반복 알림음 재생, 추가 완료 시 주기 유지, 확인 후 정지와 진행 중 타이머 보존까지 브라우저에서 검사한다.
+- 저장 실패 중 생성·수정·삭제·설정 변경 후 재시도하고 새로고침하여 최신 데이터를 검증한다. 정상·손상 레코드가 섞인 저장값의 원본 보존 검사도 보강했다.
+- Chromium의 실제 터치 입력 경로로 드래그 생성·취소·수정·탭·0에서 조기 종료와 빈 레일 스크롤을 검사한다. 실제 iPhone Safari 검증 범위와 구분했다.
+- iOS 알림 어댑터의 예약 시각, 수정 시 ID 유지, 타이머별 취소 ID, 예약·취소 오류 전달을 검사한다.
+- GitHub Actions에서 PR·main 변경 시 정적 검사, 단위 테스트와 브라우저 검사를 실행하는 설정을 추가했다. 원격 CI 실행과 필수 검사·배포 차단 정책 적용은 별도다.
+- 제품 실행 코드와 의존성은 변경하지 않았다.
+
+### 검증
+
+- Node 24에서 `npm run verify` 통과: lint 경고 0개, 포맷·타입 검사, 단위 테스트 40개.
+- `CI=1 npm run verify:browser` 통과: 프로덕션 빌드와 브라우저 검사 56개. Chromium·모바일 WebKit에서 27개 시나리오씩, 모바일 Chromium에서 터치 시나리오 2개를 실행했다.
+- 임시 복사본에 오류 5종을 넣어 새 검사의 실패를 확인했다. Worker 종료 시각 단위 오류는 단위·브라우저 검사에서, 알림음 호출 누락·이전 값으로 저장 재시도·핀의 터치 스크롤 허용은 브라우저 검사에서, 잘못된 네이티브 취소 ID는 단위 검사에서 감지했다. 원본 실행 코드는 건드리지 않았고 임시 복사본은 삭제했다.
+- 원격 GitHub Actions 실행과 실제 iPhone Safari·기기 알림 출력은 이번 로컬 검증에 포함하지 않았다.
+
+### 변경 파일
+
+- `.github/workflows/verify.yml`, `playwright.config.ts`
+- `src/workers/timerWorker.test.ts`
+- `src/platform/notifications/capacitorNotifications.test.ts`
+- `src/domain/timer/timerStorage.test.ts`
+- `tests/browser/clock.ts`, `tests/browser/timer-tick.spec.ts`
+- `tests/browser/timer-worker.spec.ts`, `tests/browser/timer-alert.spec.ts`
+- `tests/browser/rail-touch.spec.ts`, `tests/browser/storage-recovery.spec.ts`
+- `docs/project-structure.md`, `docs/progress.md`
+
 ## 2026-09-17 첫 카운트다운 표시 지연 수정
 
 - 공통 1초 갱신과 초 올림 표시가 어긋나 첫 숫자 감소가 약 1.9초 뒤에 보이는 문제를 수정했다. 종료 시각이나 올림 표시는 바꾸지 않고 각 타이머의 다음 초 경계에 갱신을 예약한다.

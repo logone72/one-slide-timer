@@ -1,23 +1,13 @@
 import * as playwright from "@playwright/test";
 
+import { installFallbackClock } from "./clock";
+
 const { expect, test } = playwright;
 
 test("new and edited timers decrement at their own second boundaries", async ({
   page,
 }) => {
-  const initial = new Date("2026-09-17T00:00:00.000Z");
-  await page.clock.install({ time: initial });
-  await page.clock.pauseAt(initial);
-  // 메인 스레드 폴백으로 Worker의 실제 시계와 분리해 경계 시점을 제어한다.
-  await page.addInitScript(() => {
-    window.Worker = class extends Worker {
-      constructor(url: string | URL, options?: WorkerOptions) {
-        super(url, options);
-        this.terminate();
-        throw new Error("Exercise clock-controlled fallback");
-      }
-    };
-  });
+  await installFallbackClock(page);
   await page.goto("/");
   const start = page.getByRole("button", { name: "새 타이머 시작" });
   await page.clock.runFor(100);

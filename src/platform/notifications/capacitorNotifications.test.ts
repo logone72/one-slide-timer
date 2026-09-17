@@ -1,9 +1,14 @@
+import type { LocalNotifications } from "@capacitor/local-notifications";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { capacitorNotifications } from "./capacitorNotifications";
 
 type Action = { notification: { extra: unknown } };
 const native = vi.hoisted(() => ({
+  schedule: vi.fn<typeof LocalNotifications.schedule>(() =>
+    Promise.resolve({ notifications: [] })
+  ),
+  cancel: vi.fn<typeof LocalNotifications.cancel>(() => Promise.resolve()),
   checkPermissions: vi.fn(() => Promise.resolve({ display: "prompt" })),
   requestPermissions: vi.fn(() => Promise.resolve({ display: "granted" })),
   addListener:
@@ -18,6 +23,59 @@ vi.mock("@capacitor/local-notifications", () => ({
   LocalNotifications: native,
 }));
 beforeEach(() => vi.clearAllMocks());
+
+it("preserves deadline and identity when scheduling, editing and cancelling native alerts", async () => {
+  const timer = {
+    id: "first-timer",
+    color: "blue",
+    createdAt: 1000,
+    endAt: 1_800_123,
+  };
+  await capacitorNotifications.scheduleTimer(timer);
+  const first = scheduledNotification(0);
+  expect(first.schedule).toEqual({ at: new Date(timer.endAt) });
+  expect(first.extra).toEqual({ timerId: timer.id });
+  expect(Number.isInteger(first.id)).toBe(true);
+  expect(first.id).toBeGreaterThanOrEqual(0);
+  expect(first.id).toBeLessThanOrEqual(2_147_483_647);
+  await capacitorNotifications.scheduleTimer({ ...timer, endAt: 2_400_321 });
+  expect(native.schedule.mock.calls[1]?.[0].notifications).toEqual([
+    { ...first, schedule: { at: new Date(2_400_321) } },
+  ]);
+  await capacitorNotifications.scheduleTimer({ ...timer, id: "second-timer" });
+  const second = scheduledNotification(2);
+  expect(second.id).not.toBe(first.id);
+  await capacitorNotifications.cancelTimer(timer.id);
+  await capacitorNotifications.cancelTimer("second-timer");
+  expect(native.cancel.mock.calls).toEqual([
+    [{ notifications: [{ id: first.id }] }],
+    [{ notifications: [{ id: second.id }] }],
+  ]);
+});
+
+function scheduledNotification(index: number) {
+  const notification = native.schedule.mock.calls[index]?.[0].notifications[0];
+  if (notification === undefined) {
+    throw new Error("Native notification was not scheduled");
+  }
+  return notification;
+}
+
+it("propagates native scheduling and cancellation failures for retry", async () => {
+  native.schedule.mockRejectedValueOnce(new Error("schedule failed"));
+  await expect(
+    capacitorNotifications.scheduleTimer({
+      id: "one",
+      color: "blue",
+      createdAt: 0,
+      endAt: 1000,
+    })
+  ).rejects.toThrow("schedule failed");
+  native.cancel.mockRejectedValueOnce(new Error("cancel failed"));
+  await expect(capacitorNotifications.cancelTimer("one")).rejects.toThrow(
+    "cancel failed"
+  );
+});
 
 it("reports actual permission state and does not repeatedly prompt after denial", async () => {
   native.checkPermissions.mockResolvedValueOnce({ display: "denied" });

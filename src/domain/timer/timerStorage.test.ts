@@ -80,12 +80,15 @@ it("distinguishes missing, malformed and inaccessible storage and reports write 
 });
 
 it("preserves valid timers when invalid records are present by refusing to overwrite", () => {
-  localStorage.setItem(
-    "one-slide-timer:timers",
-    JSON.stringify([{ id: "broken" }])
-  );
+  const records = [
+    { id: "valid", color: TIMER_COLORS[0], createdAt: 1000, endAt: 9000 },
+    { id: "broken" },
+  ];
+  localStorage.setItem("one-slide-timer:timers", JSON.stringify(records));
   expect(loadTimers()).toEqual({ ok: false });
-  expect(localStorage.getItem("one-slide-timer:timers")).toContain("broken");
+  expect(localStorage.getItem("one-slide-timer:timers")).toBe(
+    JSON.stringify(records)
+  );
 });
 
 it("normalizes old ranges and retired themes", () => {
