@@ -7,12 +7,12 @@ import {
 import type { TimerRecord } from "@/domain/timer/timerTypes";
 
 import { nativeSubscription } from "./nativeSubscription";
-import type {
-  NotificationPermission,
-  NotificationPort,
-} from "./notificationPort";
+import type { ScheduledNotificationDriver } from "./notificationDriver";
+import type { NotificationPermission } from "./notificationPort";
 
-export const capacitorNotifications: NotificationPort = {
+export const capacitorNotifications: ScheduledNotificationDriver = {
+  unsupportedReason: "이 기기에서는 알림을 사용할 수 없어요.",
+  guidance: "기기 설정 → 알림 → One Slide Timer에서 권한을 변경할 수 있어요.",
   async checkPermission() {
     return normalizePermission(
       (await LocalNotifications.checkPermissions()).display
@@ -44,7 +44,10 @@ export const capacitorNotifications: NotificationPort = {
       return [{ id: item.extra.timerId, endAt, precisionMs: 1000 as const }];
     });
   },
-  async sendTest() {
+  async sendTest(isCurrent = () => true) {
+    if (!isCurrent()) {
+      return;
+    }
     await LocalNotifications.schedule({
       notifications: [
         {

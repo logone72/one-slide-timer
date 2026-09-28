@@ -24,6 +24,7 @@
 one-slide-timer/
   src/
   public/
+    notification-sw.js
     manifest.webmanifest
     favicon.svg
   docs/
@@ -65,6 +66,7 @@ src/
     timerCommands.ts
     persistence.ts
     notificationRuntime.ts
+    notificationAudio.ts
     notificationPermission.ts
     state/
       appStore.ts
@@ -115,6 +117,9 @@ src/
     environment.ts
     notifications/
       notificationPort.ts
+      notificationDriver.ts
+      scheduledNotifications.ts
+      completionNotifications.ts
       browserNotifications.ts
       capacitorNotifications.ts
       nativeSubscription.ts
@@ -143,13 +148,13 @@ src/
 - `features/timer-rail/`: 시간 레일, 핀 드래그, 라벨 충돌 회피를 맡는다. `railInteractionMachine.ts`는 제스처·타이머 액션·시간 조정 화면의 배타적인 상태 전환을 관리하고, `useRailInteraction.ts`는 DOM 입력과 최신 타이머 생성·수정 콜백을 연결한다. `useTimerMotion.ts`는 핀·라벨·연결선의 `transform` 보간과 동작 줄이기 설정을 처리한다.
 - `features/settings/`: 설정 버튼, 설정 화면, 시간 범위 스테퍼·슬라이더와 색상 테마 선택을 맡는다.
 - `features/completion-alert/`: 완료 알림 병합, 확인 흐름을 맡는다.
-- `platform/notifications/`: 공통 반복 알림음, 웹·Capacitor 예약 어댑터, ID별 예약·취소 순서와 오류 복구를 맡는다.
+- `platform/notifications/`: 공통 반복 알림음, 웹 완료 표시·Capacitor 예약 어댑터, ID별 예약·취소 순서와 오류 복구를 맡는다.
 - `styles/`: 디자인 토큰, 공통 스타일, 레일·설정·완료 화면별 스타일을 맡는다. 토큰 원시 값은 `tokens.css`에만 선언한다.
 - `workers/`: 종료 시각 목록을 받아 초 경계에 맞춘 UI 갱신 신호를 보낸다. `timerTicker.ts`의 예약 함수를 Worker와 메인 스레드 폴백이 공유하며 Worker는 타이머 변경 때 다시 생성하지 않는다. 타이머의 진실은 항상 `endAt`이다.
 
 `src/` 내부를 가로지르는 import는 `@/` 경로 별칭을 쓴다. 같은 폴더 안의 작은 import는 `./`를 유지한다.
 
-`notificationPort.ts`는 `checkPermission`, `requestPermission`, `scheduleTimer`, `cancelTimer`, `getPendingTimers`, `sendTest`, `onResume`, `onNotificationAction`을 노출한다. 웹 MVP에서는 앱이 열린 동안 반복 알림음과 복귀 시 완료 처리만 구현하고, `capacitorNotifications.ts`에서 네이티브 예약 알림을 연결한다. 반복 알림음은 `alertAudio.ts`가 웹과 iOS에서 함께 제공한다.
+`notificationPort.ts`는 권한·복귀 API와 전달 세션의 연결·갱신·재확인·테스트 API만 공개한다. 앱은 타이머·현재 시각·목록 완전성·전달 정책을 전달한다. `scheduledNotifications.ts`는 네이티브 예약 복원·취소·동기화를, `completionNotifications.ts`는 웹 완료 목록 병합·중복 방지·정리를 소유한다. SDK 호출과 테스트 대체 지점인 `notificationDriver.ts`는 플랫폼 내부에서만 사용한다. 웹에서는 앱 실행 중 완료 시스템 알림과 반복 알림음, 복귀 시 완료 처리를 구현하고, `capacitorNotifications.ts`에서 네이티브 예약 알림을 연결한다. 반복 알림음은 `alertAudio.ts`가 웹과 iOS에서 함께 제공한다.
 
 ## UI 구현
 
@@ -173,8 +178,8 @@ src/
 
 ## PWA 범위
 
-- 첫 웹 배포에는 `manifest.webmanifest`와 iOS 홈 화면용 최소 메타태그만 둔다.
-- service worker와 offline cache는 첫 버전에서 만들지 않는다.
+- 웹 배포에는 manifest, iOS 홈 화면 메타태그와 알림 표시·클릭 전용 서비스 워커를 둔다.
+- offline cache·fetch 가로채기·서버 Web Push는 만들지 않는다.
 - 캐싱 때문에 배포 확인이 헷갈리는 문제를 피한다.
 
 ## 테스트 기준
@@ -248,4 +253,4 @@ src/
 - Android 출시를 시작하기 전에는 `android/` 폴더를 만들지 않는다.
 - 단일 구현만 있는 인터페이스나 미래용 패키지 분리는 만들지 않는다.
 - Capacitor 전용 코드를 UI 컴포넌트 안에 흩뿌리지 않는다.
-- 첫 버전에서는 service worker를 만들지 않는다.
+- 알림 전용 service worker에 오프라인 캐시나 미래 타이머 시계를 넣지 않는다.

@@ -1,6 +1,7 @@
 import { expect, it, vi } from "vitest";
 
 import type { NotificationPermission } from "@/platform/notifications/notificationPort";
+import { createScheduledNotifications } from "@/platform/notifications/scheduledNotifications";
 
 import { createAppRuntime } from "./appRuntime";
 import { createAppStore } from "./state/appStore";
@@ -11,9 +12,9 @@ import {
 import { testDependencies } from "./testDependencies";
 
 function setup(permission: NotificationPermission = "prompt") {
-  const { deps } = testDependencies();
+  const { deps, driver } = testDependencies();
   const notifications = {
-    ...deps.notifications,
+    ...driver,
     checkPermission: vi.fn(() => Promise.resolve(permission)),
     requestPermission: vi.fn(() =>
       Promise.resolve<NotificationPermission>("granted")
@@ -30,7 +31,10 @@ function setup(permission: NotificationPermission = "prompt") {
     return Promise.resolve("granted");
   });
   const app = createAppStore();
-  const runtime = createAppRuntime(app, { ...deps, notifications });
+  const runtime = createAppRuntime(app, {
+    ...deps,
+    notifications: createScheduledNotifications(notifications),
+  });
   return { app, runtime, notifications, deps };
 }
 

@@ -8,6 +8,7 @@ import { browserDependencies } from "../../src/app/appDependencies";
 import { AppStateProvider } from "../../src/app/AppStateProvider";
 import { useAppStore } from "../../src/app/useAppState";
 import type { NotificationPermission } from "../../src/platform/notifications/notificationPort";
+import { createScheduledNotifications } from "../../src/platform/notifications/scheduledNotifications";
 
 // 테스트 페이지에서만 어댑터를 교체한다. 배포 진입점과 store에는 테스트 분기가 없다.
 const controls = {
@@ -27,7 +28,9 @@ const controls = {
 };
 Object.assign(window, { notificationTest: controls });
 const deps = browserDependencies();
-deps.notifications = {
+deps.notifications = createScheduledNotifications({
+  unsupportedReason: "테스트 환경에서 알림을 지원하지 않아요.",
+  guidance: "기기 설정에서 알림 권한을 변경해 주세요.",
   checkPermission: () => {
     controls.checked++;
     if (controls.failCheck) {
@@ -76,7 +79,7 @@ deps.notifications = {
     };
   },
   onNotificationAction: () => () => undefined,
-};
+});
 const root = document.getElementById("root");
 if (root === null) {
   throw new Error("Missing fixture root");

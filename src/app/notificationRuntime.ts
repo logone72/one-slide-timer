@@ -1,108 +1,71 @@
-import { NotificationSync } from "@/platform/notifications/syncNotifications";
-
 import type { AppDependencies } from "./appDependencies";
+import { connectAudio } from "./notificationAudio";
 import { createPermissionController } from "./notificationPermission";
 import type { AppStore } from "./state/appStore";
-import { selectNotificationsEnabled } from "./state/notificationState";
-import { selectHasCompleted } from "./state/timerState";
+import {
+  selectDeliverySnapshot,
+  selectNotificationsEnabled,
+} from "./state/notificationState";
 
 export class NotificationRuntime {
   private active = false;
-  private inventoryReady = false;
-  private inventory: Promise<void> | undefined;
   private stopListeners = (): void => undefined;
   private readonly permission;
-  private readonly sync;
+  private readonly delivery;
   constructor(
     private readonly app: AppStore,
     private readonly deps: AppDependencies
   ) {
     this.permission = createPermissionController(app, deps.notifications);
-    this.sync = new NotificationSync(
-      deps.notifications,
-      async () => {
-        await this.inventory;
-        if (!this.inventoryReady) {
-          return false;
-        }
+    this.delivery = deps.notifications.createDelivery({
+      now: deps.now,
+      onFailure: this.fail,
+      confirmPermission: async () => {
         await this.permission.refresh();
-        return this.active && selectNotificationsEnabled(app.getState());
+        return this.canNotify();
       },
-      this.fail,
-      deps.now
-    );
+    });
   }
+
   private readonly fail = (): void => {
     if (this.active) {
       this.app.actions.updateNotifications({ failed: true });
     }
   };
-  private isActive(): boolean {
-    return this.active;
+  private canNotify(): boolean {
+    return this.active && selectNotificationsEnabled(this.app.getState());
   }
   private synchronize(): void {
-    const state = this.app.getState();
-    const disabled = state.settings.notificationPreference === false;
-    this.sync.sync(
-      disabled ? [] : state.timers,
-      disabled || state.timerStorage.read === "ready"
-    );
-  }
-  private restore(): Promise<void> {
-    const checkpoint = this.sync.checkpoint();
-    this.inventory ??= this.deps.notifications
-      .getPendingTimers()
-      .then((records) => {
-        if (this.active) {
-          this.inventoryReady = true;
-          this.sync.restore(records, checkpoint);
-        }
-      })
-      .catch(this.fail)
-      .finally(() => {
-        this.inventory = undefined;
-      });
-    return this.inventory;
+    this.delivery.update(selectDeliverySnapshot(this.app.getState()));
   }
   private listen(): void {
     this.stopListeners();
     const refresh = (): void => {
       void this.refreshNotificationPermission();
     };
-    const action = this.deps.notifications.onNotificationAction(
-      refresh,
-      this.fail
-    );
-    const resume = this.deps.notifications.onResume(refresh, this.fail);
-    this.stopListeners = () => {
-      action();
-      resume();
-    };
+    this.stopListeners = this.deps.notifications.onRefresh(refresh, this.fail);
   }
+
   start(): () => void {
     this.active = true;
-    this.inventoryReady = false;
     this.permission.activate();
-    this.sync.setActive(true);
+    this.app.actions.updateNotifications({
+      guidance: this.deps.notifications.guidance,
+      unsupportedReason: this.deps.notifications.unsupportedReason,
+    });
+    const stopDelivery = this.delivery.start(
+      selectDeliverySnapshot(this.app.getState())
+    );
     const stopAudio = connectAudio(this.app, this.deps);
     this.listen();
     this.synchronize();
     void this.refreshNotificationPermission();
-    const unsubscribe = this.app.subscribe((state, previous) => {
-      if (
-        state.timers !== previous.timers ||
-        state.settings.notificationPreference !==
-          previous.settings.notificationPreference ||
-        state.timerStorage.read !== previous.timerStorage.read ||
-        state.settingsStorage.read !== previous.settingsStorage.read
-      ) {
-        this.synchronize();
-      }
-    });
+    // 전달 방식에 관계없이 같은 입력을 보낸다. 실행 기록과 중복 방지는 adapter가 맡는다.
+    const unsubscribe = this.app.subscribe(() => this.synchronize());
     return () => {
       this.active = false;
       this.permission.deactivate();
-      this.sync.setActive(false);
+      stopDelivery();
       unsubscribe();
       stopAudio();
       this.stopListeners();
@@ -110,7 +73,7 @@ export class NotificationRuntime {
   }
   readonly refreshNotificationPermission = async (): Promise<void> => {
     this.app.actions.setNow(this.deps.now());
-    await Promise.all([this.permission.refresh(), this.restore()]);
+    await Promise.all([this.permission.refresh(), this.delivery.refresh()]);
     if (this.active) {
       this.synchronize();
     }
@@ -131,12 +94,12 @@ export class NotificationRuntime {
   };
   readonly sendTestNotification = async (): Promise<void> => {
     await this.permission.refresh();
-    if (!this.active || !selectNotificationsEnabled(this.app.getState())) {
+    if (!this.canNotify()) {
       return;
     }
     try {
-      await this.deps.notifications.sendTest();
-      if (this.isActive()) {
+      const result = await this.delivery.sendTest();
+      if (result === "requested" && this.canNotify()) {
         this.app.actions.updateNotifications({
           message: "테스트 알림을 요청했어요.",
         });
@@ -149,32 +112,5 @@ export class NotificationRuntime {
     this.app.actions.updateNotifications({ failed: false });
     this.listen();
     void this.refreshNotificationPermission();
-  };
-}
-
-function connectAudio(app: AppStore, deps: AppDependencies): () => void {
-  const update = (): void =>
-    app.actions.updateNotifications({
-      audioReady: deps.audio.isAlertAudioReady(),
-    });
-  const stop = deps.audio.subscribeAlertAudio(update);
-  update();
-  if (selectHasCompleted(app.getState())) {
-    deps.audio.startAlertAudio();
-  }
-  const unsubscribe = app.subscribe((state, previous) => {
-    if (selectHasCompleted(state) === selectHasCompleted(previous)) {
-      return;
-    }
-    if (selectHasCompleted(state)) {
-      deps.audio.startAlertAudio();
-    } else {
-      deps.audio.stopAlertAudio();
-    }
-  });
-  return () => {
-    stop();
-    unsubscribe();
-    deps.audio.stopAlertAudio();
   };
 }

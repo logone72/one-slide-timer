@@ -1,11 +1,14 @@
 import type { TimerRecord } from "@/domain/timer/timerTypes";
 
 import type {
-  NotificationPort,
   PendingTimerNotification,
-} from "./notificationPort";
+  ScheduledNotificationDriver,
+} from "./notificationDriver";
 
-type BookingPort = Pick<NotificationPort, "scheduleTimer" | "cancelTimer">;
+type BookingPort = Pick<
+  ScheduledNotificationDriver,
+  "scheduleTimer" | "cancelTimer"
+>;
 
 // 권한 대기는 ID별 네이티브 변경 큐 밖에 둔다. 취소를 권한 응답 뒤로 미루지 않는다.
 export class NotificationSync {
@@ -18,6 +21,7 @@ export class NotificationSync {
   private revision = 0;
   private authoritative = false;
   private active = true;
+  private generation = 0;
 
   constructor(
     private readonly port: BookingPort,
@@ -31,6 +35,11 @@ export class NotificationSync {
   }
   setActive(active: boolean): void {
     this.active = active;
+    if (!active) {
+      // 재연결에서는 같은 타이머라도 새 권한 확인을 시작한다. 이전 응답은 무효다.
+      this.generation++;
+      this.checking.clear();
+    }
   }
 
   sync(timers: TimerRecord[], authoritative = true): void {
@@ -126,14 +135,23 @@ export class NotificationSync {
     if (this.checking.get(timer.id) === timer.endAt) {
       return;
     }
+    const generation = this.generation;
     this.checking.set(timer.id, timer.endAt);
     void this.canSchedule()
       .then((allowed) => {
-        if (!allowed || !this.isCurrent(timer)) {
+        if (
+          !allowed ||
+          generation !== this.generation ||
+          !this.isCurrent(timer)
+        ) {
           return;
         }
         this.enqueue(timer.id, async () => {
-          if (!this.isCurrent(timer) || this.booked.has(timer.id)) {
+          if (
+            generation !== this.generation ||
+            !this.isCurrent(timer) ||
+            this.booked.has(timer.id)
+          ) {
             return;
           }
           // 호출이 실패하더라도 OS에 반영되었을 수 있으므로 재시도에서 먼저 취소한다.
@@ -149,7 +167,10 @@ export class NotificationSync {
       })
       .catch(this.onFailure)
       .finally(() => {
-        if (this.checking.get(timer.id) === timer.endAt) {
+        if (
+          generation === this.generation &&
+          this.checking.get(timer.id) === timer.endAt
+        ) {
           this.checking.delete(timer.id);
         }
       });

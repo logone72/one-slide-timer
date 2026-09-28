@@ -15,14 +15,13 @@ export function NotificationSettings() {
       <h2 id="notification-title">알림</h2>
       <NotificationChoices />
       <p id="notification-status" role="status">
-        {permissionLabel(notification.permission, notification.phase)}
+        {permissionLabel(
+          notification.permission,
+          notification.phase,
+          notification.unsupportedReason
+        )}
       </p>
-      {notification.permission === "denied" && (
-        <p>
-          기기 설정 → 알림 → One Slide Timer에서 알림을 허용한 뒤 다시 확인해
-          주세요.
-        </p>
-      )}
+      <p>{notification.guidance}</p>
       {!unsupported && (
         <div className="notification-buttons">
           <button
@@ -45,10 +44,7 @@ export function NotificationSettings() {
       )}
       {notification.failed && (
         <p role="status">
-          {enabled
-            ? "기기 알림을 처리하지 못했어요."
-            : "일부 예약 알림을 취소하지 못했어요."}{" "}
-          알림 다시 시도로 확인해 주세요.
+          기기 알림을 처리하지 못했어요. 알림 다시 시도로 확인해 주세요.
         </p>
       )}
       <p role="status">{notification.message}</p>
@@ -119,7 +115,11 @@ function NotificationChoices() {
   );
 }
 
-function permissionLabel(permission: string | null, phase: string): string {
+function permissionLabel(
+  permission: string | null,
+  phase: string,
+  unsupportedReason: string
+): string {
   if (phase === "checking") {
     return "기기 권한: 확인 중";
   }
@@ -131,7 +131,7 @@ function permissionLabel(permission: string | null, phase: string): string {
   }
   switch (permission) {
     case "unsupported":
-      return "현재 웹 버전에서는 기기 알림을 제공하지 않아요. 앱 내부 알림음은 사용할 수 있어요.";
+      return unsupportedReason;
     case "granted":
       return "기기 권한: 허용됨";
     case "denied":

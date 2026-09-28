@@ -30,7 +30,11 @@ export default defineConfig({
     {
       name: "desktop-chromium",
       testIgnore: "**/rail-touch.spec.ts",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        channel: "chromium",
+        permissions: ["notifications"],
+      },
     },
     {
       name: "mobile-safari",
@@ -40,7 +44,7 @@ export default defineConfig({
     {
       name: "mobile-chromium-touch",
       testMatch: "**/rail-touch.spec.ts",
-      use: { ...devices["Pixel 7"] },
+      use: { ...devices["Pixel 7"], permissions: ["notifications"] },
     },
   ],
 });

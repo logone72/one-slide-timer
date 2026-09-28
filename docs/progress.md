@@ -2,6 +2,51 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-28 알림 모듈 구조 문서 추가
+
+- `src/platform/notifications/README.md`에 파일별 역할, 의존 방향, 상태 소유권과 전달·복구 규칙을 간략히 정리했다.
+
+## 2026-09-28 알림 전달 책임을 플랫폼 경계 안으로 이동
+
+- `codebase-design` 기준으로 앱에서 알아야 하는 실행 순서를 줄였다. 공통 runtime은 권한·store 연결만 수행하며 웹/iOS 분기, 예약 조회·복원·체크포인트를 알지 않는다. 전달 세션은 연결·최신 입력·재확인·테스트 동작만 공개한다.
+- iOS adapter는 기존 ID별 예약 알고리즘과 이전 예약의 초 정밀도 호환을 유지하며 조회·복원·수명을 소유한다. 웹 adapter는 완료 목록 계산·병합·중복 방지·표시 정리를 소유한다. adapter는 store를 구독하거나 권한 상태를 복제하지 않는다.
+- 권한 보류와 명시적 X, 저장소 읽기 실패와 빈 목록, 해제 후 재연결의 의미를 interface와 구현 주석으로 명시했다. 환경 안내와 미지원 사유도 adapter에서 공급한다. 앱·화면에서 플랫폼 내부 driver를 참조하지 못하도록 기존 화면 import 제한을 보존하며 lint 규칙을 추가했다.
+- 자체 리뷰에서 표시 진행 중 X를 선택하면 이전 정리 성공 기록 때문에 정리가 누락될 수 있는 경합을 수정했다. 재연결 시 이전 권한 대기가 새 예약을 막는 문제와 X→O 또는 재연결 후 오래된 테스트 성공 응답도 회귀 테스트로 보호했다.
+
+### 검증
+
+- Node 24 `npm run verify`: lint·포맷·타입 검사와 단위·통합 테스트 **22개 파일 / 80개 통과**. production 빌드 통과.
+- 전체 Playwright 검사: **76개 통과 / 1개 실패 / 1개 제외**. 모바일 권한 검사 실패는 개발 서버 파일 갱신 도중 DOM 교체·초기 안내 재표시와 겹쳤다. 코드 변경 없이 해당 모바일 권한 파일을 재실행하여 **6개 모두 통과**했다. 실제 Chromium 서비스 워커 알림 검사는 전체 실행에서 통과했다.
+- iOS 실기기 알림·잠금·백그라운드 동작은 이번 자동화 검증 범위에 포함되지 않는다. 제외된 1개는 모바일 WebKit 실제 시스템 알림 검사다.
+
+### 이번 작업의 변경 파일
+
+- 공통 연결·화면: `src/app/notificationRuntime.ts`, `src/app/state/notificationState.ts`, `src/features/settings/NotificationSettings.tsx`.
+- 플랫폼: `src/platform/notifications/notificationPort.ts`, `notificationDriver.ts`, `scheduledNotifications.ts`, `completionNotifications.ts`, `syncNotifications.ts`, `browserNotifications.ts`, `capacitorNotifications.ts`, `index.ts`. 앱의 기존 `src/app/completionNotifications.ts`는 플랫폼 구현으로 이동했다.
+- 검사·경계: `eslint.config.js`, `src/app/testDependencies.ts`, `src/app/notificationRuntime.test.ts`, `src/app/notificationRecovery.test.ts`, `src/app/nativeReservationRecovery.test.ts`, `src/app/completionNotifications.test.ts`, `src/platform/notifications/browserNotifications.test.ts`, `src/platform/notifications/notificationDelivery.test.ts`, `tests/fixtures/permissions.tsx`.
+- 문서: `docs/project-structure.md`, `docs/notification-permissions-plan.md`, `docs/zustand-state-management-plan.md`, `docs/progress.md`.
+
+## 2026-09-28 웹 시스템 알림 지원과 범위 정정
+
+- 웹 알림을 임의로 제외했던 계획을 정정했다. 웹·iOS 모두 초기 권한 조회, 앱 안내의 확인 또는 설정 O 선택에 따른 요청, 상태 표시·재확인·테스트 알림을 제공한다. 미지원은 HTTPS·브라우저 API 조건으로 판단하며 웹 전체를 미지원으로 반환하지 않는다.
+- 웹은 기존 store의 타이머와 현재 시각, 기존 완료 selector를 사용한다. 완료 목록은 같은 tag로 병합하고 매초 재전송하지 않는다. 확인·X 선택 때 표시 알림을 닫으며, 비동기 준비 도중 확인·비활성화·실행 해제 시 오래된 전송과 정리를 중단한다. 권한 재확인 중 확인하는 경합과 지연된 테스트 성공 안내도 보완했다.
+- `NotificationPort`를 공통 권한 API와 실제 전달 방식(`scheduled` / `completion`)으로 나눴다. iOS 예약·취소·복원 로직은 유지했다. 웹에 별도 타이머 원본·시계·가짜 미래 예약을 만들지 않았다. 브라우저 API와 환경 안내는 어댑터에, 권한·사용 선택은 기존 Zustand 영역에 유지했다.
+- 알림 전용 서비스 워커를 추가했다. 첫 표시 때 등록·활성화를 기다려 `showNotification`을 호출하고, 클릭하면 기존 앱을 활성화하거나 연다. 서비스 워커 미지원 환경은 Notification 생성자로 전달한다. offline cache·fetch 가로채기·서버 Web Push는 추가하지 않았다.
+
+### 검증과 한계
+
+- Node 24에서 lint·포맷·타입 검사 및 단위·통합 검사 **21개 파일 / 74개 통과**. production 빌드와 `git diff --check` 통과.
+- 전체 Playwright 검사 **77개 통과 / 1개 제외**. 마지막 지연 테스트 알림 안내 수정 후 최종 빌드로 알림 관련 검사 **15개 통과 / 1개 제외**를 다시 확인했다. 권한 요청은 확인 버튼에서만 실행됨을 검사했으며 실제 Chromium 서비스 워커 등록·테스트 알림·완료 알림·확인 후 닫기를 검증했다. 기존 타이머·저장 복구·테마·모션·터치 회귀 검사도 통과했다.
+- headless shell은 권한을 부여해도 Notification 권한을 denied로 반환했다. 데스크톱 검사에 실제 Chromium headless 채널을 사용했다. 저장 복구 검사는 알림 경고까지 모두 사라진다고 가정하지 않고 해당 저장 오류의 해소를 검사하도록 수정했다.
+- 제외 1개는 모바일 WebKit에서 자동화로 실제 시스템 알림을 검증하는 검사다. 모바일 WebKit의 권한 UI 검사는 별도로 통과했다. iPhone 홈 화면 웹앱·실제 OS 권한 팝업·소리·잠금·집중 모드는 실기기 미검증이다. 웹앱 종료 또는 실행 중단 중의 정시 예약 알림은 보장하지 않는다.
+
+### 변경 파일
+
+- 실행·상태: `src/app/notificationRuntime.ts`, `src/app/completionNotifications.ts`, `src/app/notificationAudio.ts`, `src/app/state/notificationState.ts`.
+- 어댑터·화면: `src/platform/notifications/notificationPort.ts`, `src/platform/notifications/browserNotifications.ts`, `src/platform/notifications/capacitorNotifications.ts`, `src/platform/notifications/syncNotifications.ts`, `src/platform/notifications/index.ts`, `src/features/settings/NotificationSettings.tsx`, `public/notification-sw.js`.
+- 검사: `src/app/completionNotifications.test.ts`, `src/app/testDependencies.ts`, `src/platform/notifications/browserNotifications.test.ts`, `tests/browser/web-notifications.spec.ts`, `tests/browser/notification-permissions.spec.ts`, `tests/browser/storage-recovery.spec.ts`, `tests/fixtures/permissions.tsx`, `playwright.config.ts`.
+- 기준 문서: `AGENTS.md`, `CONTEXT.md`, `docs/product-spec.md`, `docs/project-structure.md`, `docs/notification-permissions-plan.md`, `docs/zustand-state-management-plan.md`, `docs/progress.md`.
+
 ## 2026-09-28 알림 안내에서 설정 종료 후 초점 복귀 수정
 
 - 알림 안내의 ‘알림 설정 보기’ 버튼이 설정 진입 시 제거되면서 닫은 뒤 초점이 `body`에 남던 문제를 수정했다. 원래 초점 대상이 문서에 남아 있으면 기존대로 복귀하고, 대상이 제거되었거나 `body`이면 설정 버튼으로 복귀한다. DOM 초점 처리는 설정 화면에 유지했다.

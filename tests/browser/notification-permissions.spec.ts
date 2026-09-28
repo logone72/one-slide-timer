@@ -125,16 +125,19 @@ test("defers late startup permission during rail adjustment and restores focus",
   await expect(page.locator(".start-pin")).toBeFocused();
 });
 
-test("web exposes unsupported system alerts and accessible independent audio controls", async ({
+test("missing browser API exposes unsupported system alerts and accessible independent audio controls", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    Reflect.deleteProperty(window, "Notification");
+  });
   await page.goto("/");
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
   await expect(
     page.getByRole("radio", { name: "O 사용", exact: true })
   ).toBeDisabled();
   await expect(page.locator("#notification-status")).toContainText(
-    "현재 웹 버전에서는 기기 알림을 제공하지 않아요"
+    "이 환경에서는 기기 알림 API를 사용할 수 없어요"
   );
   const sound = page.getByRole("button", { name: "소리 테스트" });
   await sound.click();

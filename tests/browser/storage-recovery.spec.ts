@@ -131,7 +131,12 @@ test("write recovery persists creations, edits, deletions and settings across re
   });
   await page.getByRole("button", { name: "타이머 저장 재시도" }).click();
   await page.getByRole("button", { name: "저장 재시도", exact: true }).click();
-  await expect(page.locator(".status-notice")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "타이머 저장 재시도" })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "저장 재시도", exact: true })
+  ).toHaveCount(0);
   const recovered = await readTimers();
   expect(recovered.map((timer) => timer.id)).toEqual(["0", createdId]);
   expect(recovered[0]).toEqual({

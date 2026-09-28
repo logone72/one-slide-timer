@@ -5,6 +5,20 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import tseslint from "typescript-eslint";
 
+const notificationBoundary = {
+  group: [
+    "**/notificationDriver",
+    "**/scheduledNotifications",
+    "**/completionNotifications",
+    "**/syncNotifications",
+    "**/browserNotifications",
+    "**/capacitorNotifications",
+    "**/nativeSubscription",
+  ],
+  message:
+    "앱은 notificationPort의 공통 interface만 사용합니다. 플랫폼 실행 순서는 adapter 내부에 둡니다.",
+};
+
 export default tseslint.config(
   {
     ignores: [
@@ -151,6 +165,7 @@ export default tseslint.config(
         "error",
         {
           patterns: [
+            notificationBoundary,
             {
               group: [
                 "**/appContext",
@@ -166,6 +181,23 @@ export default tseslint.config(
                 "화면은 useAppStore와 useAppActions를 사용하고 실행 계층이나 원본 store를 직접 참조하지 않습니다.",
             },
           ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/app/**/*.{ts,tsx}"],
+    ignores: [
+      "src/app/**/*.test.ts",
+      "src/app/testDependencies.ts",
+      "src/app/App.tsx",
+      "src/app/AppNotices.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [notificationBoundary],
         },
       ],
     },

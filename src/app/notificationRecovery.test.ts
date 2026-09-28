@@ -2,13 +2,14 @@ import { expect, it, vi } from "vitest";
 
 import { DEFAULT_SETTINGS } from "@/domain/timer/timerTypes";
 import type { NotificationPermission } from "@/platform/notifications/notificationPort";
+import { createScheduledNotifications } from "@/platform/notifications/scheduledNotifications";
 
 import { createAppRuntime } from "./appRuntime";
 import { createAppStore } from "./state/appStore";
 import { testDependencies } from "./testDependencies";
 
 it("discovers and cancels old bookings for saved off without waiting for permission", async () => {
-  const { deps } = testDependencies();
+  const { deps, driver } = testDependencies();
   deps.storage.loadSettings.mockReturnValue({
     ok: true,
     value: { ...DEFAULT_SETTINGS, notificationPreference: false },
@@ -19,12 +20,12 @@ it("discovers and cancels old bookings for saved off without waiting for permiss
   );
   const runtime = createAppRuntime(createAppStore(), {
     ...deps,
-    notifications: {
-      ...deps.notifications,
+    notifications: createScheduledNotifications({
+      ...driver,
       checkPermission: check,
       cancelTimer: cancelled,
       getPendingTimers: () => Promise.resolve([{ id: "old", endAt: 2000 }]),
-    },
+    }),
   });
   runtime.start();
   await vi.waitFor(() =>
@@ -35,17 +36,17 @@ it("discovers and cancels old bookings for saved off without waiting for permiss
 });
 
 it("does not cancel unread records or cancel native bookings on unmount", async () => {
-  const { deps } = testDependencies();
+  const { deps, driver } = testDependencies();
   const cancelled = vi.fn(() => Promise.resolve());
   const runtime = createAppRuntime(createAppStore(), {
     ...deps,
     storage: { ...deps.storage, loadTimers: () => ({ ok: false }) },
-    notifications: {
-      ...deps.notifications,
+    notifications: createScheduledNotifications({
+      ...driver,
       checkPermission: () => Promise.resolve("granted"),
       cancelTimer: cancelled,
       getPendingTimers: () => Promise.resolve([{ id: "unread", endAt: 60000 }]),
-    },
+    }),
   });
   runtime.start();
   await runtime.actions.refreshNotificationPermission();
@@ -55,7 +56,7 @@ it("does not cancel unread records or cancel native bookings on unmount", async 
 });
 
 it("restores an unchanged existing booking before considering a new schedule", async () => {
-  const { deps } = testDependencies();
+  const { deps, driver } = testDependencies();
   const timer = { id: "saved", createdAt: 1, endAt: 60000, color: "blue" };
   const schedule = vi.fn(() => Promise.resolve());
   const cancel = vi.fn(() => Promise.resolve());
@@ -72,13 +73,13 @@ it("restores an unchanged existing booking before considering a new schedule", a
       ...deps.storage,
       loadTimers: () => ({ ok: true, value: [timer] }),
     },
-    notifications: {
-      ...deps.notifications,
+    notifications: createScheduledNotifications({
+      ...driver,
       checkPermission: () => Promise.resolve("granted"),
       getPendingTimers: () => inventory,
       scheduleTimer: schedule,
       cancelTimer: cancel,
-    },
+    }),
   });
   runtime.start();
   await new Promise((done) => setTimeout(done, 0));
@@ -92,17 +93,17 @@ it("restores an unchanged existing booking before considering a new schedule", a
 });
 
 it("honors explicit in-memory opt-in during a settings read failure", async () => {
-  const { deps } = testDependencies();
+  const { deps, driver } = testDependencies();
   const app = createAppStore();
   const schedule = vi.fn(() => Promise.resolve());
   const runtime = createAppRuntime(app, {
     ...deps,
     storage: { ...deps.storage, loadSettings: () => ({ ok: false }) },
-    notifications: {
-      ...deps.notifications,
+    notifications: createScheduledNotifications({
+      ...driver,
       checkPermission: () => Promise.resolve("granted"),
       scheduleTimer: schedule,
-    },
+    }),
   });
   runtime.start();
   await runtime.actions.refreshNotificationPermission();
@@ -117,7 +118,7 @@ it("honors explicit in-memory opt-in during a settings read failure", async () =
 });
 
 it("cancels actual reservations returned after the user switches off during startup discovery", async () => {
-  const { deps } = testDependencies();
+  const { deps, driver } = testDependencies();
   const timer = { id: "saved", createdAt: 1, endAt: 60000, color: "blue" };
   const cancel = vi.fn(() => Promise.resolve());
   let finish: (records: Array<{ id: string; endAt: number }>) => void = () =>
@@ -133,11 +134,11 @@ it("cancels actual reservations returned after the user switches off during star
       ...deps.storage,
       loadTimers: () => ({ ok: true, value: [timer] }),
     },
-    notifications: {
-      ...deps.notifications,
+    notifications: createScheduledNotifications({
+      ...driver,
       getPendingTimers: () => inventory,
       cancelTimer: cancel,
-    },
+    }),
   });
   runtime.start();
   runtime.actions.disableNotifications();

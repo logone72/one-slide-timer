@@ -2,6 +2,7 @@ import type { LocalNotifications } from "@capacitor/local-notifications";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { capacitorNotifications } from "@/platform/notifications/capacitorNotifications";
+import { createScheduledNotifications } from "@/platform/notifications/scheduledNotifications";
 
 import { createAppRuntime } from "./appRuntime";
 import { createAppStore } from "./state/appStore";
@@ -28,7 +29,7 @@ it.each([
 ])(
   "preserves native reservations (legacy: %s, failed permission query: %s)",
   async (legacy, failQuery) => {
-    const { deps } = testDependencies();
+    const { deps, driver } = testDependencies();
     deps.now.mockReturnValue(1789);
     const timer = { id: "saved", createdAt: 1789, endAt: 61789, color: "blue" };
     native.checkPermissions.mockResolvedValue({ display: "granted" });
@@ -53,11 +54,11 @@ it.each([
         ...deps.storage,
         loadTimers: () => ({ ok: true, value: [timer] }),
       },
-      notifications: {
+      notifications: createScheduledNotifications({
         ...capacitorNotifications,
-        onResume: deps.notifications.onResume,
-        onNotificationAction: deps.notifications.onNotificationAction,
-      },
+        onResume: driver.onResume,
+        onNotificationAction: driver.onNotificationAction,
+      }),
     });
     try {
       runtime.start();
