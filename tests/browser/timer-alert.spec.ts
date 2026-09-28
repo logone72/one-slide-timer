@@ -35,10 +35,12 @@ test("completion repeats audio without restarting for added timers and acknowled
     );
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "알림음 켜기" }).click();
-  await expect(page.getByRole("button", { name: "알림음 켜기" })).toHaveCount(
-    0
-  );
+  await page.getByRole("button", { name: "설정 열기", exact: true }).click();
+  await page.getByRole("switch", { name: "알림음", exact: true }).click();
+  await expect(
+    page.getByRole("switch", { name: "알림음", exact: true })
+  ).toBeChecked();
+  await page.getByRole("button", { name: "타이머로 돌아가기" }).click();
   const beeps = () =>
     page.evaluate(
       () => (window as Window & { beepTimes?: number[] }).beepTimes ?? []

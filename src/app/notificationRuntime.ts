@@ -9,6 +9,7 @@ import {
 
 export class NotificationRuntime {
   private active = false;
+  private audioChoice = 0;
   private stopListeners = (): void => undefined;
   private readonly permission;
   private readonly delivery;
@@ -64,6 +65,7 @@ export class NotificationRuntime {
     const unsubscribe = this.app.subscribe(() => this.synchronize());
     return () => {
       this.active = false;
+      this.audioChoice++;
       this.permission.deactivate();
       stopDelivery();
       unsubscribe();
@@ -81,13 +83,26 @@ export class NotificationRuntime {
   readonly requestNotifications = async (): Promise<void> => {
     await this.permission.request();
     if (this.active) {
-      this.synchronize();
+      if (this.app.getState().notifications.failed) {
+        this.retryNotifications();
+      } else {
+        this.synchronize();
+      }
     }
   };
   readonly disableNotifications = (): void => this.permission.disable();
   readonly deferNotificationPrompt = (): void => this.permission.defer();
-  readonly enableAudio = (): void => {
-    void this.deps.audio.prepareAlertAudio();
+  readonly enableAudio = async (): Promise<void> => {
+    const choice = ++this.audioChoice;
+    const ready = await this.deps.audio.prepareAlertAudio();
+    // 준비 도중 X를 선택했다면 늦게 도착한 성공으로 다시 켜지 않는다.
+    if (this.active && choice === this.audioChoice) {
+      this.app.actions.setAudioEnabled(ready);
+    }
+  };
+  readonly disableAudio = (): void => {
+    this.audioChoice++;
+    this.app.actions.setAudioEnabled(false);
   };
   readonly testAudio = (): void => {
     void this.deps.audio.testAlertAudio();

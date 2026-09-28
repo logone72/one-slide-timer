@@ -35,7 +35,8 @@ export function createPermissionController(
         if (active && version === revision) {
           update({
             phase: "error",
-            message: "권한을 확인하지 못했어요. 다시 확인해 주세요.",
+            message:
+              "권한을 확인하지 못했어요. 토글을 켜서 다시 시도해 주세요.",
           });
         }
         return null;
@@ -68,10 +69,15 @@ export function createPermissionController(
     }
     app.actions.setNotificationPreference(false);
     // 미허용 상태의 실제 OS 요청은 이 사용자 동작에서 직접 시작한다.
-    if (current.permission === "prompt") {
+    const shouldRequest =
+      current.permission === "prompt" ||
+      current.permission === null ||
+      current.phase === "error";
+    // 조회 실패 뒤에도 첫 클릭에서 OS 요청을 시작해 사용자 활성화를 유지한다.
+    if (shouldRequest) {
       reading = undefined;
     }
-    const operation = current.permission === "prompt" ? run(true) : refresh();
+    const operation = shouldRequest ? run(true) : refresh();
     requesting = operation
       .then((permission) => {
         if (active && selection === choice && permission === "granted") {

@@ -54,6 +54,7 @@ export function createSettingsActions(store: StoreApi<AppState>) {
     },
     setNotificationPreference: (notificationPreference: boolean | null): void =>
       update({ notificationPreference }),
+    setAudioEnabled: (audioEnabled: boolean): void => update({ audioEnabled }),
     setTheme: (theme: ThemeId): void => update({ theme }),
     setRangeMinutes: (rangeMinutes: number): void =>
       update({ rangeMinutes: clampRangeMinutes(rangeMinutes) }),

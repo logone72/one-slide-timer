@@ -7,8 +7,6 @@ import type {
 
 const completionTag = "one-slide-timer-completed";
 const testTag = "one-slide-timer-test";
-const guidance =
-  "브라우저의 사이트 설정에서 알림 권한을 변경할 수 있어요. iPhone·iPad에서는 홈 화면에 추가한 웹앱으로 열어 주세요. 웹 알림은 앱이 실행 중일 때 전달하며, 앱이 닫히거나 실행이 중단된 동안의 예약 알림은 보장하지 않아요.";
 
 function permission(): NotificationPermission {
   if (!window.isSecureContext || !("Notification" in window)) {
@@ -87,7 +85,7 @@ export function createBrowserDriver(): CompletionNotificationDriver {
   return {
     unsupportedReason:
       "이 환경에서는 기기 알림 API를 사용할 수 없어요. HTTPS와 브라우저 지원 여부를 확인해 주세요. 앱 내부 알림음은 사용할 수 있어요.",
-    guidance,
+    guidance: "",
     checkPermission: () => Promise.resolve(permission()),
     requestPermission: () => {
       if (permission() !== "prompt") {

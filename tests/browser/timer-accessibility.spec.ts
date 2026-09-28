@@ -80,9 +80,9 @@ test("adds completed timers without reopening the dialog or moving focus", async
       () => (window as Window & { closeCount?: number }).closeCount
     )
   ).toBe(0);
-  await expect(
-    dialog.getByRole("button", { name: "알림음 켜기" })
-  ).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "알림음 켜기" })).toHaveCount(
+    0
+  );
 });
 
 test("switching from keyboard preview to the adjustment dialog cancels the preview", async ({
@@ -106,7 +106,7 @@ test("switching from keyboard preview to the adjustment dialog cancels the previ
   await expect(page.getByTestId("timer-pin")).toHaveCount(1);
 });
 
-test("audio suspension and closure restore the activation action", async ({
+test("audio suspension and closure turn the switch off and recover through the same switch", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -125,22 +125,23 @@ test("audio suspension and closure restore the activation action", async ({
   await page.getByRole("button", { name: "새 타이머 시작" }).focus();
   await page.keyboard.press("Shift+ArrowUp");
   await page.keyboard.press("Enter");
-  const activate = page.getByRole("button", { name: "알림음 켜기" });
-  await expect(activate).toHaveCount(0);
+  await page.getByRole("button", { name: "설정 열기", exact: true }).click();
+  const activate = page.getByRole("switch", { name: "알림음", exact: true });
+  await expect(activate).toBeChecked();
   await page.evaluate(() =>
     (
       window as Window & { testAudioContext?: AudioContext }
     ).testAudioContext?.suspend()
   );
-  await expect(activate).toBeVisible();
+  await expect(activate).not.toBeChecked();
   await activate.click();
-  await expect(activate).toHaveCount(0);
+  await expect(activate).toBeChecked();
   await page.evaluate(() =>
     (
       window as Window & { testAudioContext?: AudioContext }
     ).testAudioContext?.close()
   );
-  await expect(activate).toBeVisible();
+  await expect(activate).not.toBeChecked();
   await activate.click();
-  await expect(activate).toHaveCount(0);
+  await expect(activate).toBeChecked();
 });

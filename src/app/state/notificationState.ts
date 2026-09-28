@@ -41,7 +41,9 @@ export const selectNotificationsPermitted = (state: AppState): boolean =>
   (state.settingsStorage.read === "ready" ||
     state.editedSettings.notificationPreference === true);
 export const selectNotificationsEnabled = (state: AppState): boolean =>
-  state.notifications.phase === "idle" && selectNotificationsPermitted(state);
+  state.notifications.phase === "idle" &&
+  !state.notifications.failed &&
+  selectNotificationsPermitted(state);
 export const selectShouldPrompt = (state: AppState): boolean =>
   state.notifications.permission === "prompt" &&
   state.notifications.phase === "idle" &&

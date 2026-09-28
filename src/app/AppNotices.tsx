@@ -12,9 +12,6 @@ export function AppNotices() {
   );
   const permissionNotice = useAppStore(selectPermissionNotice);
   const notificationFailed = useAppStore((state) => state.notifications.failed);
-  const needsAudio = useAppStore(
-    (state) => !state.notifications.audioReady && state.timers.length > 0
-  );
   const actions = useAppActions();
   return (
     <>
@@ -40,18 +37,7 @@ export function AppNotices() {
         />
       )}
       {notificationFailed && (
-        <StatusNotice
-          message="기기 알림을 처리하지 못했어요. 앱을 열어두고 알림음을 켜주세요."
-          action="알림 다시 시도"
-          onAction={actions.retryNotifications}
-        />
-      )}
-      {needsAudio && (
-        <StatusNotice
-          message="소리 알림을 사용하려면 알림음을 켜주세요."
-          action="알림음 켜기"
-          onAction={actions.enableAudio}
-        />
+        <StatusNotice message="기기 알림을 처리하지 못했어요. 설정에서 기기 알림을 켜주세요." />
       )}
     </>
   );

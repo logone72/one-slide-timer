@@ -1,5 +1,6 @@
 let context: AudioContext | null = null;
 let interval: number | undefined;
+let playing: OscillatorNode | undefined;
 const changes = new EventTarget();
 
 export const isAlertAudioReady = (): boolean => context?.state === "running";
@@ -37,6 +38,8 @@ export function startAlertAudio(): void {
 export function stopAlertAudio(): void {
   window.clearInterval(interval);
   interval = undefined;
+  playing?.stop();
+  playing = undefined;
 }
 
 function playBeep(): void {
@@ -44,12 +47,16 @@ function playBeep(): void {
     return;
   }
   const oscillator = context.createOscillator();
+  playing = oscillator;
   const gain = context.createGain();
   oscillator.frequency.value = 880;
   gain.gain.value = 0.04;
   oscillator.connect(gain);
   gain.connect(context.destination);
   oscillator.onended = () => {
+    if (playing === oscillator) {
+      playing = undefined;
+    }
     oscillator.disconnect();
     gain.disconnect();
   };

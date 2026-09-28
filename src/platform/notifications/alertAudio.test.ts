@@ -53,6 +53,7 @@ it("restores audio after user activation and keeps a single repeating alarm", as
   vi.advanceTimersByTime(1000);
   expect(oscillator.start).toHaveBeenCalledTimes(4);
   audio.stopAlertAudio();
+  expect(oscillator.stop).toHaveBeenLastCalledWith();
   vi.advanceTimersByTime(3000);
   expect(oscillator.start).toHaveBeenCalledTimes(4);
 });

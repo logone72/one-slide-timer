@@ -193,5 +193,10 @@ test("settings recovery preserves fields untouched while reads were blocked", as
           localStorage.getItem("one-slide-timer:settings") ?? "null"
         ) as unknown
     )
-  ).toEqual({ rangeMinutes: 25, theme: "ocean", notificationPreference: null });
+  ).toEqual({
+    rangeMinutes: 25,
+    theme: "ocean",
+    notificationPreference: null,
+    audioEnabled: true,
+  });
 });

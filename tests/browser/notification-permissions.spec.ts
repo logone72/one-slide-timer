@@ -36,12 +36,13 @@ test("asks only after confirmation, persists off, and leaves requests alive when
   await page.evaluate(() => window.notificationTest.resume());
   await expect(prompt).toBeHidden();
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
-  const on = page.getByRole("radio", { name: "O 사용", exact: true });
-  const off = page.getByRole("radio", { name: "X 사용 안 함" });
-  await on.click();
+  const on = page.getByRole("switch", { name: "기기 알림", exact: true });
+  const off = page.getByRole("switch", { name: "기기 알림", exact: true });
   await expect(
-    page.getByText("기기 권한: 요청 중", { exact: true })
-  ).toBeVisible();
+    page.getByRole("button", { name: "테스트 알림 보내기" })
+  ).toHaveCount(0);
+  await on.click();
+  await expect(on).toBeDisabled();
   expect(await page.evaluate(() => window.notificationTest.requested)).toBe(1);
   await page.getByRole("button", { name: "타이머로 돌아가기" }).click();
   await page.evaluate(() => window.notificationTest.resolveRequest("granted"));
@@ -52,14 +53,17 @@ test("asks only after confirmation, persists off, and leaves requests alive when
   expect(
     await page.evaluate(() => localStorage.getItem("one-slide-timer:timers"))
   ).toBe("[]");
-  await off.check();
+  await off.uncheck();
+  await expect(
+    page.getByRole("button", { name: "테스트 알림 보내기" })
+  ).toHaveCount(0);
   await page.evaluate(() => window.notificationTest.resume());
-  await expect(off).toBeChecked();
+  await expect(off).not.toBeChecked();
   await page.reload();
   await expect(prompt).toBeHidden();
 });
 
-test("shows denial and errors separately and supports retry without another OS request", async ({
+test("shows denial and errors separately and recovers through the off switch", async ({
   page,
 }) => {
   await page.goto(harness);
@@ -73,10 +77,12 @@ test("shows denial and errors separately and supports retry without another OS r
   await page
     .getByRole("button", { name: "알림 설정 보기", exact: true })
     .click();
-  await expect(page.getByRole("radio", { name: "X 사용 안 함" })).toBeChecked();
   await expect(
-    page.getByText("기기 권한: 차단됨", { exact: true })
-  ).toBeVisible();
+    page.getByRole("switch", { name: "기기 알림", exact: true })
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole("switch", { name: "기기 알림", exact: true })
+  ).toBeEnabled();
   await page.keyboard.press("Escape");
   const settingsButton = page.getByRole("button", {
     name: "설정 열기",
@@ -88,23 +94,26 @@ test("shows denial and errors separately and supports retry without another OS r
     window.notificationTest.failCheck = true;
     window.notificationTest.resume();
   });
-  await expect(page.locator("#notification-status")).toHaveText(
-    "권한을 확인하지 못했어요. 다시 확인해 주세요."
-  );
+  await expect(page.locator("#notification-status")).toHaveCount(0);
   await expect(
-    page.getByRole("radio", { name: "O 사용", exact: true })
+    page.getByRole("switch", { name: "기기 알림", exact: true })
   ).not.toBeChecked();
+  await expect(
+    page.getByRole("button", { name: "다시 확인", exact: true })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("switch", { name: "기기 알림", exact: true })
+  ).toBeEnabled();
   await page.evaluate(() => {
     window.notificationTest.failCheck = false;
     window.notificationTest.permission = "granted";
   });
-  await page.getByRole("button", { name: "다시 확인", exact: true }).click();
-  await expect(page.getByRole("radio", { name: "X 사용 안 함" })).toBeChecked();
-  await page.getByRole("radio", { name: "O 사용", exact: true }).click();
+  await page.getByRole("switch", { name: "기기 알림", exact: true }).click();
+  await page.evaluate(() => window.notificationTest.resolveRequest("granted"));
   await expect(
-    page.getByRole("radio", { name: "O 사용", exact: true })
+    page.getByRole("switch", { name: "기기 알림", exact: true })
   ).toBeChecked();
-  expect(await page.evaluate(() => window.notificationTest.requested)).toBe(1);
+  expect(await page.evaluate(() => window.notificationTest.requested)).toBe(2);
 });
 
 test("defers late startup permission during rail adjustment and restores focus", async ({
@@ -134,14 +143,16 @@ test("missing browser API exposes unsupported system alerts and accessible indep
   await page.goto("/");
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
   await expect(
-    page.getByRole("radio", { name: "O 사용", exact: true })
+    page.getByRole("switch", { name: "기기 알림", exact: true })
   ).toBeDisabled();
-  await expect(page.locator("#notification-status")).toContainText(
-    "이 환경에서는 기기 알림 API를 사용할 수 없어요"
-  );
+  await expect(page.locator("#notification-status")).toHaveCount(0);
   const sound = page.getByRole("button", { name: "소리 테스트" });
+  await expect(sound).toHaveCount(0);
+  await page.getByRole("switch", { name: "알림음", exact: true }).click();
   await sound.click();
-  await expect(page.getByText("활성화됨", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "알림음 켜기" })).toHaveCount(
+    0
+  );
   const box = await sound.boundingBox();
   expect(box?.height).toBeGreaterThanOrEqual(44);
 });
@@ -165,17 +176,12 @@ for (const outcome of ["error", "prompt"] as const) {
     await page
       .getByRole("button", { name: "알림 설정 보기", exact: true })
       .click();
-    if (outcome === "error") {
-      await page
-        .getByRole("button", { name: "다시 확인", exact: true })
-        .click();
-    }
-    await page.getByRole("radio", { name: "O 사용", exact: true }).click();
+    await page.getByRole("switch", { name: "기기 알림", exact: true }).click();
     await page.evaluate(() =>
       window.notificationTest.resolveRequest("granted")
     );
     await expect(
-      page.getByRole("radio", { name: "O 사용", exact: true })
+      page.getByRole("switch", { name: "기기 알림", exact: true })
     ).toBeChecked();
     await page.getByRole("button", { name: "타이머로 돌아가기" }).click();
     await expect(

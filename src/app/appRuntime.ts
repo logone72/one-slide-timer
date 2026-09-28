@@ -13,7 +13,10 @@ export function createAppRuntime(app: AppStore, deps: AppDependencies) {
     ...createTimerCommands(app, {
       now: deps.now,
       newId: deps.newId,
-      prepareAudio: deps.audio.prepareAlertAudio,
+      prepareAudio: () =>
+        app.getState().settings.audioEnabled
+          ? deps.audio.prepareAlertAudio()
+          : Promise.resolve(false),
     }),
     setTheme: app.actions.setTheme,
     setRangeMinutes: app.actions.setRangeMinutes,
@@ -22,6 +25,7 @@ export function createAppRuntime(app: AppStore, deps: AppDependencies) {
     retryTimerStorage: persistence.retryTimers,
     retrySettingsStorage: persistence.retrySettings,
     enableAudio: notifications.enableAudio,
+    disableAudio: notifications.disableAudio,
     testAudio: notifications.testAudio,
     sendTestNotification: notifications.sendTestNotification,
     requestNotifications: notifications.requestNotifications,

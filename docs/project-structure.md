@@ -105,6 +105,8 @@ src/
       RangeSettings.tsx
       ThemeSettings.tsx
       NotificationSettings.tsx
+      AudioSettings.tsx
+      ToggleSwitch.tsx
       StatusNotice.tsx
 
     notification-permission/

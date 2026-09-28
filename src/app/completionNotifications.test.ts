@@ -95,7 +95,7 @@ it("reports failure once, retries explicitly, and suppresses stopped work", asyn
   app.actions.setNow(3000);
   await Promise.resolve();
   expect(notifications.showCompleted).toHaveBeenCalledOnce();
-  runtime.actions.retryNotifications();
+  await runtime.actions.requestNotifications();
   await vi.waitFor(() =>
     expect(notifications.showCompleted).toHaveBeenCalledTimes(2)
   );

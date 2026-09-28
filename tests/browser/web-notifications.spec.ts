@@ -34,7 +34,7 @@ test("browser permission request starts only from confirmation", async ({
   await expect(page.locator("html")).toHaveAttribute("data-requested", "yes");
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
   await expect(
-    page.getByRole("radio", { name: "O 사용", exact: true })
+    page.getByRole("switch", { name: "기기 알림", exact: true })
   ).toBeChecked();
 });
 
@@ -68,7 +68,7 @@ test("real browser worker displays tests and completed timers, then clears ackno
   expect(await page.evaluate(() => Notification.permission)).toBe("granted");
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
   await expect(
-    page.getByRole("radio", { name: "O 사용", exact: true })
+    page.getByRole("switch", { name: "기기 알림", exact: true })
   ).toBeChecked();
   await page.getByRole("button", { name: "테스트 알림 보내기" }).click();
   await expect(page.getByText("테스트 알림을 요청했어요.")).toBeVisible();

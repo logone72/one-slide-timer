@@ -189,6 +189,10 @@
   --icon-xl: 28px;
   --icon-stroke: 1.8;
   --size-touch: 48px;
+  --size-switch-width: 48px;
+  --size-switch-height: 28px;
+  --size-switch-thumb: 22px;
+  --size-switch-inset: 3px;
   --size-stepper: 48px;
   --size-slider-thumb: 26px;
   --size-slider-track: 6px;

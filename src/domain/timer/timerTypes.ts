@@ -50,10 +50,12 @@ export type AppSettings = {
   rangeMinutes: number;
   theme: ThemeId;
   notificationPreference: boolean | null;
+  audioEnabled: boolean;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
   rangeMinutes: DEFAULT_RANGE_MINUTES,
   theme: "white",
   notificationPreference: null,
+  audioEnabled: true,
 };

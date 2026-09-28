@@ -1,5 +1,5 @@
 import type { AppDependencies } from "./appDependencies";
-import type { AppStore } from "./state/appStore";
+import type { AppState, AppStore } from "./state/appStore";
 import { selectHasCompleted } from "./state/timerState";
 
 export function connectAudio(app: AppStore, deps: AppDependencies): () => void {
@@ -9,14 +9,14 @@ export function connectAudio(app: AppStore, deps: AppDependencies): () => void {
     });
   const stop = deps.audio.subscribeAlertAudio(update);
   update();
-  if (selectHasCompleted(app.getState())) {
+  if (shouldPlay(app.getState())) {
     deps.audio.startAlertAudio();
   }
   const unsubscribe = app.subscribe((state, previous) => {
-    if (selectHasCompleted(state) === selectHasCompleted(previous)) {
+    if (shouldPlay(state) === shouldPlay(previous)) {
       return;
     }
-    if (selectHasCompleted(state)) {
+    if (shouldPlay(state)) {
       deps.audio.startAlertAudio();
     } else {
       deps.audio.stopAlertAudio();
@@ -27,4 +27,14 @@ export function connectAudio(app: AppStore, deps: AppDependencies): () => void {
     unsubscribe();
     deps.audio.stopAlertAudio();
   };
+}
+
+// 저장소를 읽지 못했다면 저장된 X를 무시하고 기본값으로 소리를 내지 않는다.
+function shouldPlay(state: AppState): boolean {
+  return (
+    state.settings.audioEnabled &&
+    (state.settingsStorage.read === "ready" ||
+      state.editedSettings.audioEnabled === true) &&
+    selectHasCompleted(state)
+  );
 }

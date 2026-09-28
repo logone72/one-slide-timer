@@ -1,5 +1,7 @@
 import * as playwright from "@playwright/test";
 
+import { DEFAULT_SETTINGS } from "../../src/domain/timer/timerTypes";
+
 const { expect, test } = playwright;
 const SETTINGS_KEY = "one-slide-timer:settings";
 const TIMERS_KEY = "one-slide-timer:timers";
@@ -65,7 +67,7 @@ test("migrates hours and steps in minutes without changing a running deadline", 
       (key) => JSON.parse(localStorage.getItem(key) ?? "{}") as unknown,
       SETTINGS_KEY
     )
-  ).toEqual({ rangeMinutes: 5, theme: "white", notificationPreference: null });
+  ).toEqual({ ...DEFAULT_SETTINGS, rangeMinutes: 5 });
   const timers = await page.evaluate(
     (key) =>
       JSON.parse(localStorage.getItem(key) ?? "[]") as Array<{

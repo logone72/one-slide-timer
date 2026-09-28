@@ -68,6 +68,8 @@ export function loadSettings(): StorageRead<AppSettings> {
   return {
     ok: true,
     value: {
+      // 기존 저장값에는 이 필드가 없다. 기존 소리 동작을 유지한다.
+      audioEnabled: readAudioEnabled(saved.audioEnabled),
       notificationPreference: readNotificationPreference(
         saved.notificationPreference
       ),
@@ -148,4 +150,8 @@ function readNotificationPreference(value: unknown): boolean | null {
     return null;
   }
   return typeof value === "boolean" ? value : false;
+}
+
+function readAudioEnabled(value: unknown): boolean {
+  return typeof value === "boolean" ? value : DEFAULT_SETTINGS.audioEnabled;
 }

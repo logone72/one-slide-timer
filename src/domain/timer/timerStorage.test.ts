@@ -25,7 +25,12 @@ it("migrates legacy status, colors and hours without changing identity or deadli
   );
   expect(loadSettings()).toEqual({
     ok: true,
-    value: { notificationPreference: null, rangeMinutes: 120, theme: "white" },
+    value: {
+      audioEnabled: true,
+      notificationPreference: null,
+      rangeMinutes: 120,
+      theme: "white",
+    },
   });
   const timer = {
     id: "existing",
@@ -50,6 +55,7 @@ it("migrates legacy status, colors and hours without changing identity or deadli
   expect(loadTimers()).toEqual({ ok: true, value: [] });
   expect(
     saveSettings({
+      audioEnabled: true,
       notificationPreference: null,
       rangeMinutes: 25,
       theme: "midnight",
@@ -58,6 +64,7 @@ it("migrates legacy status, colors and hours without changing identity or deadli
   expect(loadSettings()).toEqual({
     ok: true,
     value: {
+      audioEnabled: true,
       notificationPreference: null,
       rangeMinutes: 25,
       theme: "midnight",
@@ -120,7 +127,7 @@ it("normalizes old ranges and retired themes", () => {
     localStorage.setItem("one-slide-timer:settings", JSON.stringify(saved));
     expect(loadSettings()).toEqual({
       ok: true,
-      value: { ...expected, notificationPreference: null },
+      value: { ...expected, audioEnabled: true, notificationPreference: null },
     });
   }
 });
@@ -147,8 +154,27 @@ it("migrates missing notification choice and validates it without changing other
       value: {
         rangeMinutes: 25,
         theme: "ocean",
+        audioEnabled: true,
         notificationPreference: expected,
       },
+    });
+  }
+});
+
+it("restores saved audio choices and migrates missing or invalid values", () => {
+  for (const [saved, expected] of [
+    [undefined, true],
+    [false, false],
+    [true, true],
+    ["false", true],
+  ]) {
+    localStorage.setItem(
+      "one-slide-timer:settings",
+      JSON.stringify({ audioEnabled: saved })
+    );
+    expect(loadSettings()).toEqual({
+      ok: true,
+      value: { ...DEFAULT_SETTINGS, audioEnabled: expected },
     });
   }
 });

@@ -2,6 +2,46 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-28 설정의 권한 상태 문구 제거
+
+- `notification-status`와 상태 문구 생성 함수를 삭제하고 토글의 해당 `aria-describedby` 참조도 제거했다. 권한 조회·요청·토글 상태 동작은 유지했다.
+- 변경 파일: `src/features/settings/NotificationSettings.tsx`, `tests/browser/notification-permissions.spec.ts`, `docs/progress.md`.
+
+## 2026-09-28 알림 테스트 버튼 노출 조건 정리
+
+- 소리 테스트와 기기 알림 테스트는 각각의 토글이 켜진 동안에만 표시한다. 토글과 버튼이 같은 활성 상태를 사용하도록 맞췄다.
+- 변경 파일: `src/features/settings/{AudioSettings,NotificationSettings}.tsx`, `tests/browser/{audio-settings,notification-permissions}.spec.ts`, `docs/progress.md`.
+
+## 2026-09-28 알림음 재생 준비 안내 제거
+
+- 설정과 메인·완료 화면에서 알림음 재생 준비·재시도 안내를 제거했다. 재생 불가 상태는 꺼진 토글만으로 표시한다.
+- 변경 파일: `src/features/settings/AudioSettings.tsx`, `src/app/AppNotices.tsx`, `docs/progress.md`.
+
+## 2026-09-28 알림 설정 항목 사이 여백 축소
+
+- 기기 알림과 알림음 사이의 구분선과 추가 상단 margin·padding을 제거하고 공통 토글의 기본 간격만 유지했다.
+- 변경 파일: `src/styles/notifications.css`, `docs/progress.md`.
+
+## 2026-09-28 웹 알림의 상시 안내 문구 제거
+
+- 설정에서 긴 브라우저·홈 화면·백그라운드 제약 설명을 제거하고, 안내가 비어 있으면 문단도 렌더링하지 않는다.
+- 변경 파일: `src/platform/notifications/browserNotifications.ts`, `src/features/settings/NotificationSettings.tsx`, `docs/progress.md`.
+
+## 2026-09-28 알림 복구 조작을 토글로 통일
+
+- `다시 확인`, `알림음 켜기`, 별도 알림 재시도 버튼을 제거했다. 조회·전달 실패와 소리 재생 차단은 꺼진 토글로 표시하고 토글을 켜면 복구를 시도한다. 미지원·처리 중 상태만 조작을 막는다.
+- 조회 실패 후 첫 클릭에서도 권한 요청을 직접 시작해 브라우저 사용자 활성화를 유지한다. 저장된 알림음 사용 선택은 재생 준비 상태와 구분하며, 명시적으로 끈 선택은 그대로 유지한다.
+- 검증: lint·포맷·타입 검사, 단위·통합 84개와 production 빌드 통과. 데스크톱 Chromium·모바일 WebKit의 알림·오디오·접근성 관련 브라우저 24개 통과.
+- 변경 파일: `src/features/settings/{NotificationSettings,AudioSettings}.tsx`, `src/app/{AppNotices,notificationPermission,notificationRuntime}`, `src/app/state/notificationState.ts`, `src/app/completionNotifications.test.ts`, `tests/browser/{audio-settings,notification-permissions,timer-alert,timer-accessibility}.spec.ts`, `CONTEXT.md`, `docs/{product-spec,notification-permissions-plan,progress}.md`.
+
+## 2026-09-28 알림 공통 토글과 알림음 사용 설정
+
+- 기기 알림과 알림음을 `ToggleSwitch`로 통일했다. 기본 checkbox의 키보드·포커스 동작과 `switch` 역할을 사용하며 테마·크기·모션은 디자인 토큰을 따른다.
+- 알림음 선택 `audioEnabled`를 기존 설정 저장·복구 경로에 추가했다. 이전 저장값은 기존 동작대로 켜짐으로 이행한다. 재생 준비 상태와 사용 선택은 분리하고, 끄면 현재 소리와 반복을 중단한다. 테스트 재생은 사용 선택을 바꾸지 않는다.
+- 준비 실패·끄기 이후 늦은 응답·읽기 실패 중 설정 복구를 보호하는 검사와 새로고침·키보드 토글 브라우저 검사를 추가했다.
+- 검증: Node 24 lint·포맷·타입 검사, 단위·통합 **84개**, production 빌드 통과. 전체 브라우저 검사 **79개 통과 / 1개 제외**(모바일 WebKit 실제 시스템 알림). `git diff --check` 통과.
+- 변경 파일: `src/features/settings/{ToggleSwitch,AudioSettings,NotificationSettings}.tsx`, `src/styles/{tokens,notifications}.css`, `src/app/{AppNotices,appRuntime,notificationAudio,notificationRuntime}`, `src/app/state/settingsState.ts`, `src/domain/timer/{timerTypes,timerStorage}`, `src/platform/notifications/alertAudio.ts` 및 관련 테스트. 기준 문서는 `CONTEXT.md`, `docs/product-spec.md`, `docs/notification-permissions-plan.md`, `docs/project-structure.md`, `docs/progress.md`를 갱신했다.
+
 ## 2026-09-28 알림 모듈 구조 문서 추가
 
 - `src/platform/notifications/README.md`에 파일별 역할, 의존 방향, 상태 소유권과 전달·복구 규칙을 간략히 정리했다.
