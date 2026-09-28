@@ -1,50 +1,36 @@
 import { type CSSProperties, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
 
-import {
-  type AppSettings,
-  TIMER_COLORS,
-  type TimerRecord,
-} from "@/domain/timer/timerTypes";
+import { selectRunningTimers } from "@/app/state/timerState";
+import { useAppActions, useAppStore } from "@/app/useAppState";
+import { TIMER_COLORS } from "@/domain/timer/timerTypes";
 
 import { RailDecorations, RailHelp } from "./RailDecorations";
 import { TimerAdjustment } from "./TimerAdjustment";
 import { TimerPin } from "./TimerPin";
+import type { RailActor } from "./timerRailActions";
 import { useRailInteraction } from "./useRailInteraction";
 import { useRailLayout } from "./useRailLayout";
 
-type TimerRailProps = {
-  timers: TimerRecord[];
-  now: number;
-  settings: AppSettings;
-  onCreateTimer: (durationMs: number, color: string) => void;
-  onUpdateTimer: (timerId: string, durationMs: number) => void;
-  onDismissTimer: (timerId: string) => void;
-};
-
-export function TimerRail({
-  timers,
-  now,
-  settings,
-  onCreateTimer,
-  onUpdateTimer,
-  onDismissTimer,
-}: TimerRailProps) {
+export function TimerRail({ actor }: { actor: RailActor }) {
+  const timers = useAppStore(useShallow(selectRunningTimers));
+  const now = useAppStore((state) => state.now);
+  const rangeMinutes = useAppStore((state) => state.settings.rangeMinutes);
+  const { dismissTimer } = useAppActions();
   const railRef = useRef<HTMLDivElement>(null);
   const color =
     TIMER_COLORS[timers.length % TIMER_COLORS.length] ?? TIMER_COLORS[0];
-  const interaction = useRailInteraction({
+  const interaction = useRailInteraction(actor, {
     railRef,
     timers,
-    rangeMinutes: settings.rangeMinutes,
+    rangeMinutes,
     color,
-    onCreateTimer,
-    onUpdateTimer,
   });
   const { height, motions, pitch } = useRailLayout(
     railRef,
     timers,
     now,
-    settings.rangeMinutes
+    rangeMinutes
   );
   const draft = interaction.draft;
   const ending = interaction.editing && draft?.durationMs === 0;
@@ -69,7 +55,7 @@ export function TimerRail({
       >
         <RailDecorations
           draft={draft}
-          rangeMinutes={settings.rangeMinutes}
+          rangeMinutes={rangeMinutes}
           height={height}
           empty={timers.length === 0}
           ending={ending}
@@ -87,7 +73,7 @@ export function TimerRail({
             onClose={interaction.cancel}
             onAdjust={() => interaction.openAdjustment(timer.id)}
             onDismiss={() => {
-              onDismissTimer(timer.id);
+              dismissTimer(timer.id);
               interaction.cancel();
             }}
           />
@@ -96,7 +82,7 @@ export function TimerRail({
       <TimerAdjustment
         timerId={interaction.adjustingId}
         timers={timers}
-        rangeMinutes={settings.rangeMinutes}
+        rangeMinutes={rangeMinutes}
         onClose={interaction.cancel}
         onApply={interaction.applyAdjustment}
       />

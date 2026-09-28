@@ -1,19 +1,16 @@
-import { useMachine } from "@xstate/react";
+import { useSelector } from "@xstate/react";
 import { type KeyboardEvent, type PointerEvent, useEffect } from "react";
 
-import { railInteractionMachine } from "./railInteractionMachine";
 import * as railGesture from "./timerRailActions";
 import { createGesture, getGestureDuration } from "./timerRailGeometry";
 import { handleRailKey } from "./timerRailKeyboard";
 
-export function useRailInteraction(options: railGesture.RailOptions) {
-  const [state, send, actor] = useMachine(
-    railInteractionMachine.provide({
-      actions: {
-        commitTimer: (_, change) => railGesture.commitTimer(change, options),
-      },
-    })
-  );
+export function useRailInteraction(
+  actor: railGesture.RailActor,
+  options: railGesture.RailOptions
+) {
+  const state = useSelector(actor, (snapshot) => snapshot);
+  const send = actor.send;
   useGestureCancellation(actor);
   const adjustingId = state.context.adjustingId;
   useEffect(() => {

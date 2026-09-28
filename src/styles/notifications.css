@@ -1,0 +1,88 @@
+.notification-settings {
+  margin-top: var(--space-8);
+}
+.notification-settings h2,
+.permission-prompt h2 {
+  font-size: var(--font-size-section);
+  font-weight: var(--font-weight-semibold);
+}
+.notification-settings fieldset {
+  border: 0;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+}
+.notification-settings legend,
+.notification-audio h3 {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+}
+.notification-settings p,
+.permission-prompt p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-body);
+  margin: var(--space-3) 0;
+}
+.notification-options,
+.notification-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.notification-options label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.notification-options label:has(:checked) {
+  border-color: var(--color-accent);
+  background: var(--color-surface-raised);
+}
+.notification-options input {
+  accent-color: var(--color-accent);
+}
+.notification-options label:has(:disabled) {
+  opacity: var(--opacity-disabled);
+}
+.notification-buttons button {
+  min-height: var(--size-touch);
+  width: auto;
+}
+.notification-audio {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: var(--border-thin) solid var(--color-border);
+}
+.permission-prompt {
+  max-width: min(calc(100% - var(--space-8)), var(--app-max-width));
+  max-height: calc(
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) -
+      var(--space-8)
+  );
+  overflow-y: auto;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-dialog);
+  padding: var(--space-6);
+  margin: auto;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.permission-prompt[open] {
+  animation: screen-in var(--motion-enter) var(--ease-out);
+}
+.permission-prompt::backdrop {
+  background: var(--color-backdrop);
+}
+.secondary-button {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-raised);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+}

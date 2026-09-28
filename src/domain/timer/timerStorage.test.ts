@@ -25,7 +25,7 @@ it("migrates legacy status, colors and hours without changing identity or deadli
   );
   expect(loadSettings()).toEqual({
     ok: true,
-    value: { rangeMinutes: 120, theme: "white" },
+    value: { notificationPreference: null, rangeMinutes: 120, theme: "white" },
   });
   const timer = {
     id: "existing",
@@ -48,10 +48,20 @@ it("migrates legacy status, colors and hours without changing identity or deadli
     JSON.stringify([{ ...timer, status: "dismissed" }])
   );
   expect(loadTimers()).toEqual({ ok: true, value: [] });
-  expect(saveSettings({ rangeMinutes: 25, theme: "midnight" })).toBe(true);
+  expect(
+    saveSettings({
+      notificationPreference: null,
+      rangeMinutes: 25,
+      theme: "midnight",
+    })
+  ).toBe(true);
   expect(loadSettings()).toEqual({
     ok: true,
-    value: { rangeMinutes: 25, theme: "midnight" },
+    value: {
+      notificationPreference: null,
+      rangeMinutes: 25,
+      theme: "midnight",
+    },
   });
 });
 
@@ -108,6 +118,37 @@ it("normalizes old ranges and retired themes", () => {
     ],
   ]) {
     localStorage.setItem("one-slide-timer:settings", JSON.stringify(saved));
-    expect(loadSettings()).toEqual({ ok: true, value: expected });
+    expect(loadSettings()).toEqual({
+      ok: true,
+      value: { ...expected, notificationPreference: null },
+    });
+  }
+});
+
+it("migrates missing notification choice and validates it without changing other settings", () => {
+  for (const [saved, expected] of [
+    [undefined, null],
+    [null, null],
+    [true, true],
+    [false, false],
+    ["true", false],
+    [1, false],
+  ]) {
+    localStorage.setItem(
+      "one-slide-timer:settings",
+      JSON.stringify({
+        rangeMinutes: 25,
+        theme: "ocean",
+        notificationPreference: saved,
+      })
+    );
+    expect(loadSettings()).toEqual({
+      ok: true,
+      value: {
+        rangeMinutes: 25,
+        theme: "ocean",
+        notificationPreference: expected,
+      },
+    });
   }
 });

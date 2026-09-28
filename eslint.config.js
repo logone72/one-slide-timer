@@ -141,6 +141,36 @@ export default tseslint.config(
     },
   },
   {
+    files: [
+      "src/features/**/*.{ts,tsx}",
+      "src/app/App.tsx",
+      "src/app/AppNotices.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/appContext",
+                "**/appRuntime",
+                "**/appDependencies",
+                "**/state/appStore",
+                "**/notificationRuntime",
+                "**/notificationPermission",
+                "**/persistence",
+                "**/timerCommands",
+              ],
+              message:
+                "화면은 useAppStore와 useAppActions를 사용하고 실행 계층이나 원본 store를 직접 참조하지 않습니다.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["vite.config.ts", "playwright.config.ts", "capacitor.config.ts"],
     languageOptions: {
       globals: globals.node,

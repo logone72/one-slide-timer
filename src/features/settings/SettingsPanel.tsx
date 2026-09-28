@@ -1,24 +1,15 @@
 import { ArrowLeft, ArrowUp, MoveVertical, Volume2 } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
 
-import type { AppSettings } from "@/domain/timer/timerTypes";
+import { useAppActions, useAppStore } from "@/app/useAppState";
 
+import { NotificationSettings } from "./NotificationSettings";
 import { RangeSettings } from "./RangeSettings";
 import { ThemeSettings } from "./ThemeSettings";
 
-type SettingsPanelProps = {
-  notices?: ReactNode;
-  settings: AppSettings;
-  onChange: (settings: AppSettings) => void;
-  onClose: () => void;
-};
-
-export function SettingsPanel({
-  settings,
-  notices,
-  onChange,
-  onClose,
-}: SettingsPanelProps) {
+export function SettingsPanel({ notices }: { notices?: ReactNode }) {
+  const settings = useAppStore((state) => state.settings);
+  const { setRangeMinutes, setTheme, closeSettings: onClose } = useAppActions();
   const dialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -26,8 +17,14 @@ export function SettingsPanel({
     dialog?.showModal();
     return () => {
       dialog?.close();
-      if (opener instanceof HTMLElement) {
+      if (
+        opener instanceof HTMLElement &&
+        opener.isConnected &&
+        opener !== document.body
+      ) {
         opener.focus();
+      } else {
+        document.querySelector<HTMLElement>(".settings-button")?.focus();
       }
     };
   }, []);
@@ -61,12 +58,10 @@ export function SettingsPanel({
         </p>
         <RangeSettings
           rangeMinutes={settings.rangeMinutes}
-          onChange={(rangeMinutes) => onChange({ ...settings, rangeMinutes })}
+          onChange={setRangeMinutes}
         />
-        <ThemeSettings
-          theme={settings.theme}
-          onChange={(theme) => onChange({ ...settings, theme })}
-        />
+        <ThemeSettings theme={settings.theme} onChange={setTheme} />
+        <NotificationSettings />
         <section className="settings-guide" aria-labelledby="guide-title">
           <h2 id="guide-title">사용 방법</h2>
           <div>

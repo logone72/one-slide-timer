@@ -9,11 +9,15 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": [
     "eslint.config.js",

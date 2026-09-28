@@ -1,22 +1,72 @@
-import { LocalNotifications } from "@capacitor/local-notifications";
+import { App, type AppState } from "@capacitor/app";
+import {
+  type ActionPerformed,
+  LocalNotifications,
+} from "@capacitor/local-notifications";
 
 import type { TimerRecord } from "@/domain/timer/timerTypes";
 
-import type { NotificationPort } from "./notificationPort";
+import { nativeSubscription } from "./nativeSubscription";
+import type {
+  NotificationPermission,
+  NotificationPort,
+} from "./notificationPort";
 
 export const capacitorNotifications: NotificationPort = {
-  async ensurePermission() {
-    const current = await LocalNotifications.checkPermissions();
-
-    if (current.display === "granted") {
-      return true;
-    }
-
-    if (current.display === "denied") {
-      return false;
-    }
-    const requested = await LocalNotifications.requestPermissions();
-    return requested.display === "granted";
+  async checkPermission() {
+    return normalizePermission(
+      (await LocalNotifications.checkPermissions()).display
+    );
+  },
+  async requestPermission() {
+    return normalizePermission(
+      (await LocalNotifications.requestPermissions()).display
+    );
+  },
+  async getPendingTimers() {
+    const { notifications } = await LocalNotifications.getPending();
+    return notifications.flatMap((item) => {
+      if (!isTimerNotificationExtra(item.extra)) {
+        return [];
+      }
+      const original = (item.extra as { endAt?: unknown }).endAt;
+      if (
+        typeof original === "number" &&
+        Number.isFinite(original) &&
+        original > 0
+      ) {
+        return [{ id: item.extra.timerId, endAt: original }];
+      }
+      const endAt =
+        item.schedule?.at === undefined
+          ? 0
+          : new Date(item.schedule.at).getTime();
+      return [{ id: item.extra.timerId, endAt, precisionMs: 1000 as const }];
+    });
+  },
+  async sendTest() {
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: -1,
+          title: "테스트 알림",
+          body: "One Slide Timer의 기기 알림이에요.",
+          schedule: { at: new Date(Date.now() + 1000) },
+          extra: { notificationTest: true },
+        },
+      ],
+    });
+  },
+  onResume(listener, onFailure) {
+    return nativeSubscription<AppState>(
+      (callback) => App.addListener("appStateChange", callback),
+      (state) => {
+        if (state.isActive) {
+          listener();
+        }
+      },
+      onFailure
+    );
   },
   async scheduleTimer(timer: TimerRecord) {
     await LocalNotifications.schedule({
@@ -26,7 +76,7 @@ export const capacitorNotifications: NotificationPort = {
           title: "시간이 되었어요",
           body: "앱에서 완료한 타이머를 확인하세요.",
           schedule: { at: new Date(timer.endAt) },
-          extra: { timerId: timer.id },
+          extra: { timerId: timer.id, endAt: timer.endAt },
         },
       ],
     });
@@ -37,33 +87,19 @@ export const capacitorNotifications: NotificationPort = {
     });
   },
   onNotificationAction(listener, onFailure) {
-    let disposed = false;
-    let remove: (() => Promise<void>) | undefined;
-    void LocalNotifications.addListener(
-      "localNotificationActionPerformed",
+    return nativeSubscription<ActionPerformed>(
+      (callback) =>
+        LocalNotifications.addListener(
+          "localNotificationActionPerformed",
+          callback
+        ),
       (event) => {
-        if (!disposed && isTimerNotificationExtra(event.notification.extra)) {
+        if (isTimerNotificationExtra(event.notification.extra)) {
           listener();
         }
-      }
-    )
-      .then((handle) => {
-        if (disposed) {
-          void handle.remove().catch(onFailure);
-        } else {
-          remove = () => handle.remove();
-        }
-      })
-      .catch(() => {
-        if (!disposed) {
-          onFailure();
-        }
-      });
-    return () => {
-      disposed = true;
-      void remove?.().catch(onFailure);
-      remove = undefined;
-    };
+      },
+      onFailure
+    );
   },
 };
 
@@ -85,4 +121,8 @@ function isTimerNotificationExtra(
     typeof value === "object" &&
     typeof (value as { timerId?: unknown }).timerId === "string"
   );
+}
+
+function normalizePermission(value: string): NotificationPermission {
+  return value === "granted" || value === "denied" ? value : "prompt";
 }

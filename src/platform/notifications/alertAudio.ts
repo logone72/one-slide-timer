@@ -56,3 +56,11 @@ function playBeep(): void {
   oscillator.start();
   oscillator.stop(context.currentTime + 0.18);
 }
+
+export async function testAlertAudio(): Promise<boolean> {
+  const ready = await prepareAlertAudio();
+  if (ready) {
+    playBeep();
+  }
+  return ready;
+}

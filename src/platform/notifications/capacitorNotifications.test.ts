@@ -34,13 +34,17 @@ it("preserves deadline and identity when scheduling, editing and cancelling nati
   await capacitorNotifications.scheduleTimer(timer);
   const first = scheduledNotification(0);
   expect(first.schedule).toEqual({ at: new Date(timer.endAt) });
-  expect(first.extra).toEqual({ timerId: timer.id });
+  expect(first.extra).toEqual({ timerId: timer.id, endAt: timer.endAt });
   expect(Number.isInteger(first.id)).toBe(true);
   expect(first.id).toBeGreaterThanOrEqual(0);
   expect(first.id).toBeLessThanOrEqual(2_147_483_647);
   await capacitorNotifications.scheduleTimer({ ...timer, endAt: 2_400_321 });
   expect(native.schedule.mock.calls[1]?.[0].notifications).toEqual([
-    { ...first, schedule: { at: new Date(2_400_321) } },
+    {
+      ...first,
+      schedule: { at: new Date(2_400_321) },
+      extra: { timerId: timer.id, endAt: 2_400_321 },
+    },
   ]);
   await capacitorNotifications.scheduleTimer({ ...timer, id: "second-timer" });
   const second = scheduledNotification(2);
@@ -79,9 +83,11 @@ it("propagates native scheduling and cancellation failures for retry", async () 
 
 it("reports actual permission state and does not repeatedly prompt after denial", async () => {
   native.checkPermissions.mockResolvedValueOnce({ display: "denied" });
-  expect(await capacitorNotifications.ensurePermission()).toBe(false);
+  expect(await capacitorNotifications.checkPermission()).toBe("denied");
   expect(native.requestPermissions).not.toHaveBeenCalled();
-  expect(await capacitorNotifications.ensurePermission()).toBe(true);
+  expect(await capacitorNotifications.checkPermission()).toBe("prompt");
+  expect(native.requestPermissions).not.toHaveBeenCalled();
+  expect(await capacitorNotifications.requestPermission()).toBe("granted");
   expect(native.requestPermissions).toHaveBeenCalledOnce();
 });
 

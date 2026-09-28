@@ -68,6 +68,9 @@ export function loadSettings(): StorageRead<AppSettings> {
   return {
     ok: true,
     value: {
+      notificationPreference: readNotificationPreference(
+        saved.notificationPreference
+      ),
       rangeMinutes:
         typeof range === "number"
           ? clampRangeMinutes(range)
@@ -138,4 +141,11 @@ function isLegacyStatus(status: unknown): boolean {
     status === "alerting" ||
     status === "dismissed"
   );
+}
+
+function readNotificationPreference(value: unknown): boolean | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  return typeof value === "boolean" ? value : false;
 }

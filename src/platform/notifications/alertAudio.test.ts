@@ -47,9 +47,14 @@ it("restores audio after user activation and keeps a single repeating alarm", as
   oscillator.onended();
   expect(oscillator.disconnect).toHaveBeenCalledOnce();
   expect(gain.disconnect).toHaveBeenCalledOnce();
+  vi.advanceTimersByTime(500);
+  expect(await audio.testAlertAudio()).toBe(true);
+  expect(oscillator.start).toHaveBeenCalledTimes(3);
+  vi.advanceTimersByTime(1000);
+  expect(oscillator.start).toHaveBeenCalledTimes(4);
   audio.stopAlertAudio();
   vi.advanceTimersByTime(3000);
-  expect(oscillator.start).toHaveBeenCalledTimes(2);
+  expect(oscillator.start).toHaveBeenCalledTimes(4);
 });
 
 it("keeps audio failures recoverable", async () => {

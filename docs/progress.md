@@ -2,6 +2,108 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-28 알림 안내에서 설정 종료 후 초점 복귀 수정
+
+- 알림 안내의 ‘알림 설정 보기’ 버튼이 설정 진입 시 제거되면서 닫은 뒤 초점이 `body`에 남던 문제를 수정했다. 원래 초점 대상이 문서에 남아 있으면 기존대로 복귀하고, 대상이 제거되었거나 `body`이면 설정 버튼으로 복귀한다. DOM 초점 처리는 설정 화면에 유지했다.
+- 기존 권한 브라우저 검사에 거부 후 Escape로 닫기와 오류·취소 후 권한 허용 및 돌아가기 버튼으로 닫기의 초점 검증을 추가했다. 수정 전 거부 경로의 새 검증이 실패하는 것을 확인했다.
+- 수정 후 Chromium·모바일 WebKit의 권한·설정 검사 **24개 통과**. production 빌드와 `npm run verify`의 lint·포맷·타입·단위 및 통합 검사 **64개 통과**.
+- 변경 파일: `src/features/settings/SettingsPanel.tsx`, `tests/browser/notification-permissions.spec.ts`, `docs/progress.md`.
+
+## 2026-09-28 아키텍처 리뷰 지적 3건 수정
+
+- **기존 iOS 예약 보존:** 네이티브 예약 조회에서 밀리초가 생략되어 같은 예약을 취소·재등록하던 문제를 수정했다. 새 예약은 `extra.endAt`에 정확한 종료 시각을 보존하고, 이전 예약은 조회 정밀도인 초 단위로 비교한다. 타이머 원본 `endAt`은 변경하지 않는다. 권한 조회 실패만으로 유효 예약을 취소하지 않으며 시간 변경·명시적 X 선택은 기존대로 반영한다.
+- **초기 권한 요청 결과 안내:** 요청 거부·취소·오류를 메인 화면의 안내와 ‘알림 설정 보기’ 버튼으로 표시한다. 기존 권한 상태에서 문구를 계산하며 별도 상태를 복제하지 않는다. 설정에서 재확인·재요청하여 허용하면 안내가 사라진다.
+- **저장 상태 변경 경로:** `persistence`의 직접 `setState` 호출을 제거했다. 읽기 결과 복원·병합과 쓰기 결과 반영은 상태 영역의 내부 액션이 담당하고, 저장 실행 계층은 I/O와 연결 수명만 관리한다. 내부 액션은 UI 공개 API에서 제외한다. 읽기 실패 시 원본 보호·메모리 변경 우선 병합·쓰기 실패 재시도 계약을 유지한다.
+
+### 검증
+
+- 수정 전 새 네이티브 회귀 검사 4건과 권한 오류·취소 브라우저 검사 2건이 실패하는 것을 확인했다. 네이티브 검사는 기존·새 예약 형식과 권한 조회 성공·실패 조합에서 초기 실행·앱 복귀·시간 변경·명시적 비활성화를 검사한다.
+- Node 24에서 `npm run verify`: lint 경고 0개, 포맷·타입 검사와 **19개 파일 / 64개 테스트 통과**.
+- `npm run verify:browser`: production 빌드와 데스크톱 Chromium·모바일 WebKit·Chromium 터치 경로의 **74개 테스트 통과**.
+- 수정 후 재검토에서 상태 쓰기가 `src/app/state` 안으로 모였음을 확인했다. `git diff --check` 통과. 실제 iOS 시스템 팝업·알림 전달·잠금·백그라운드·VoiceOver 검증은 미완료다.
+
+### 이번 수정 파일
+
+- 예약과 검사: `src/platform/notifications/notificationPort.ts`, `src/platform/notifications/capacitorNotifications.ts`, `src/platform/notifications/syncNotifications.ts`, `src/platform/notifications/capacitorLifecycle.test.ts`, `src/platform/notifications/capacitorNotifications.test.ts`, `src/app/nativeReservationRecovery.test.ts`.
+- 저장 상태와 공개 계약: `src/app/state/timerState.ts`, `src/app/state/settingsState.ts`, `src/app/persistence.ts`, `src/app/publicContract.test.ts`.
+- 권한 안내와 검사: `src/app/state/notificationState.ts`, `src/app/AppNotices.tsx`, `tests/fixtures/permissions.tsx`, `tests/browser/notification-permissions.spec.ts`.
+- 개발 기록: `docs/progress.md`.
+
+## 2026-09-18 Zustand 마이그레이션·권한 설정 구현과 최종 리뷰
+
+### 상태 소유권과 변경 경로
+
+- 앱 인스턴스별 Zustand store 하나로 타이머 원본·현재 시각·설정·설정 화면 열림·저장 상태·권한 상태를 이전했다. 기존 `useTimers`, `useSettings`, `useStoredState`, `useTimerNotifications`는 삭제했다.
+- 화면은 `useAppStore(selector)`로 필요한 값만 읽고 `useAppActions()`의 공개 동작으로 변경한다. 내부 복원·권한 반영 액션과 원본 store는 화면 API에서 제외했으며 타입 검사와 ESLint import 제한으로 경계를 보호한다.
+- 타이머 동작은 `timerCommands`, 저장 읽기·쓰기·복구는 `persistence`, 자원 연결·해제는 `appRuntime`, 권한·예약·오디오 연결은 `notificationRuntime`이 담당한다. 권한 결과의 반영은 `notificationPermission` 한 경로로 모았다.
+- XState는 공유 레일 actor 하나로 제스처·액션·시간 조정 전환을 맡는다. 시간 조정 입력은 로컬 상태, DOM 측정과 transform 모션은 기존 레일 코드에 유지했다. 진행·완료 여부는 `endAt`과 현재 시각으로 계산한다.
+- 기존 저장 키, 종료 시각, 5분~12시간 범위, 네 테마, 한 번의 제스처로 시작·수정, 1초 표시·부드러운 모션, 완료 병합·반복음·확인 동작을 유지했다. 저장 읽기 실패의 원본 보호와 재시도 병합, 저장 실패 후 메모리 동작도 보존했다.
+
+### 계획에 따른 새 기능
+
+- 앱 시작에는 권한만 조회하고, 미요청 상태의 안내에서 확인하거나 설정에서 O를 선택할 때만 OS 요청을 시작한다. 중복 요청과 오래된 응답이 최신 사용자 선택을 덮지 않도록 처리했다.
+- 설정에 기기 알림 O/X, 권한 상태·재확인·테스트 알림, 별도의 앱 내부 알림음 활성화·소리 테스트를 추가했다. 웹은 기기 알림 미제공을 표시하고 기존 앱 내부 알림음을 유지한다.
+- 드래그·타이머 액션·시간 조정·설정 중에는 초기 안내를 보류하고 완료 알림을 우선한다. 앱 복귀와 알림 탭에서 권한·시각·실제 예약을 다시 확인한다.
+- `zustand`와 `@capacitor/app`을 추가하고 iOS 플러그인을 동기화했다. 권한 브라우저 검사 진입점은 `tests/fixtures`에 두며 배포 빌드에는 포함하지 않는다.
+
+### 코드 리뷰 결과와 수정
+
+- **Standards:** 상태 소유권·공개 동작·저장 경로·selector·플랫폼 경계를 점검했다. 저장된 X의 예약 취소가 권한 응답을 기다리는 문제 1건을 발견해 수정했다.
+- **Spec:** 위 문제를 포함해 총 4개 경합 문제를 수정했다. (1) 예약 조회와 권한 조회를 병행하여 X의 취소가 권한 응답을 기다리지 않게 했다. (2) 초기 예약 조회 전 새 예약을 보류해 기존 유효 예약의 중복을 막았다. (3) 설정 읽기 실패 중 명시적으로 선택한 O는 메모리에서 적용하도록 했다. (4) 예약 조회 중 X·삭제·수정이 발생해도 실제 예약 응답을 최신 의도와 대조하고, 응답 유효성은 실제 OS 작업 이력으로 판별하도록 했다.
+- 각 문제에 회귀 검사를 추가했다. 수정 후 재검토에서 추가로 확정된 결함은 없었다.
+
+### 검증 결과와 남은 범위
+
+- Node 24에서 `npm run verify`: lint 경고 0개, 포맷·타입 검사, 단위·통합 검사 **18개 파일 / 60개 테스트 통과**.
+- `npm run verify:browser`: production 빌드와 **70개 테스트 통과**. 데스크톱 Chromium·모바일 WebKit·Chromium 터치 경로에서 기존 회귀 검사와 새 권한·안내 우선순위·selector 렌더 검사를 실행했다.
+- 저장 읽기 실패 보호 제거, 늦은 허용 응답의 X 덮어쓰기, 삭제한 타이머의 지연 예약, 거부된 권한을 사용 가능으로 표시하는 오류 **4개를 임시 주입해 모두 테스트 실패를 확인**했다. 이후 원본 코드를 정확히 복원했다.
+- `npx cap sync ios`와 `git diff --check`를 확인했다. iOS 빌드·실제 시스템 팝업·알림 전달·VoiceOver·잠금·백그라운드·무음·집중 모드는 **실기기 검증 미완료**다. 브라우저 검사와 플러그인 mock 통과가 이를 보장하지 않는다.
+- 변경 범위: `src/app`의 상태·실행 계층과 검사, `src/features`의 store 연결·권한 UI, `src/platform/notifications`의 어댑터·예약·오디오와 검사, 타이머 설정 저장 형식, 알림 스타일, 브라우저 검사·fixture·설정, 의존성·iOS 플러그인 설정, `AGENTS.md`·`CONTEXT.md`·제품 스펙·프로젝트 구조·두 개발 계획·이 진행 기록.
+
+## 2026-09-18 Zustand 계획 재검토 반영
+
+- 초기 권한 안내는 레일 actor가 `idle`일 때만 표시하도록 보완했다. 생성·편집 드래그, 타이머 액션, 시간 조정 중에는 보류하고 조작 종료 후 최신 조건으로 안내한다.
+- 예약 보존·명시적 취소·종료 시각 변경에 따른 교체의 처리 순서를 구분했다. 단순 권한 조회 실패는 유효 예약을 유지하고, 조기 종료·완료 확인·X 선택의 취소는 권한 확인 성공을 요구하지 않는다.
+- 시간 조정으로 무효가 된 이전 예약은 정리하고, 취소·조회·새 예약 실패 시 최신 목표를 재시도하도록 정했다. 기존의 일괄 취소 선행 순서는 변경하도록 명시했다.
+- 단계별 작업과 검증 기준에 드래그 중 조회 완료, 조회 실패 시 예약 보존과 명시적 취소, 교체 실패·재시도 시나리오를 추가했다. 제품 스펙·용어와의 일관성도 확인했다.
+- 문서만 수정했으며 실행 코드와 의존성은 변경하지 않았다.
+- 변경 파일: `docs/zustand-state-management-plan.md`, `docs/notification-permissions-plan.md`, `docs/project-structure.md`, `docs/progress.md`.
+
+## 2026-09-18 Zustand 계획 아키텍처 리뷰 반영
+
+- 최초 저장 복원과 실행 자원 재연결을 분리했다. 같은 인스턴스의 재연결은 미저장 변경·실패 상태를 보존하고, 실패한 읽기는 명시적인 재시도에서만 복원하도록 정했다.
+- UI·XState의 공개 `AppActions`와 내부 상태 변경 액션을 타입·export에서 구분하고 단순 동작은 기존 함수 참조를 제공하도록 했다.
+- 레일 actor는 `App`에서 하나만 생성해 레일·권한 안내에 전달하고 각 소비자가 필요한 상태만 구독하도록 구체화했다.
+- 권한 조회·요청·store 반영을 `notificationRuntime`으로 모으고 예약 전 재확인도 같은 경로로 연결했다. `appRuntime`은 조립·수명 관리로 책임을 제한했다.
+- 단계별 작업과 저장 실패 후 재연결, 공개 호출 계약, 조정 중 안내, 권한 표시 일치·응답 경합 검증 기준을 보강했다. 알림 계획·프로젝트 구조를 맞추고 제품 스펙·용어와의 일관성을 확인했다.
+- 문서만 수정했으며 실행 코드와 의존성은 변경하지 않았다.
+- 변경 파일: `docs/zustand-state-management-plan.md`, `docs/notification-permissions-plan.md`, `docs/project-structure.md`, `docs/progress.md`.
+
+## 2026-09-18 Zustand 기반 전체 상태 관리 계획
+
+- [적용 계획](zustand-state-management-plan.md)에 타이머·시각·설정·화면·저장 복구·알림 상태 전체의 소유권을 정리했다. 앱 인스턴스별 Zustand store 하나와 명시적인 변경 액션을 기준으로 한다.
+- 상태와 외부 실행을 분리하고, XState 상호작용·로컬 입력·DOM 측정·transform 모션의 기존 책임을 유지하도록 했다. 기존 훅 제거와 파일별 이전 방향을 포함했다.
+- 저장 키·형식·오류 복구를 보존하고 `persist` 도입을 분리했다. 단계별로 기존 상태 소유자를 대체하며 마지막에는 전체 회귀 검사·결함 주입·코드 리뷰·실기기 검증을 진행하도록 계획했다.
+- 기존 알림 계획을 Zustand 상태와 앱 실행 계층 기준으로 맞췄다. 초기 권한 안내와 O/X 동작은 유지하고 기존 기능 이전을 선행하도록 했다.
+- 제품 스펙·프로젝트 구조·에이전트 지침을 계획에 맞췄다. 실행 코드와 의존성은 수정하지 않았다.
+- 변경 파일: `docs/zustand-state-management-plan.md`, `docs/notification-permissions-plan.md`, `docs/product-spec.md`, `docs/project-structure.md`, `docs/progress.md`, `AGENTS.md`.
+
+## 2026-09-18 앱 시작 시 권한 안내 계획 보완
+
+- 앱 실행 직후 권한을 한 번 확인하고, 미요청 상태에서 앱 안내 팝업의 확인을 누르면 OS 권한 요청을 실행하는 흐름을 개발 계획에 추가했다.
+- 기존 첫 타이머 시작 시 요청 계획을 대체했다. 설정의 O 선택은 같은 요청 동작을 사용하며 생성·복원·앱 복귀에서 OS 요청을 자동 실행하지 않는다.
+- 나중에 선택, 이미 허용·차단·사용 중지·미제공 상태, 설정 읽기 실패, 중복 조회·팝업 방지, 완료 알림 우선 표시와 접근성 검증을 포함했다.
+- 제품 스펙과 에이전트 지침을 새 요청 시점에 맞췄다. 문서만 수정했으며 실행 코드는 아직 변경하지 않았다.
+- 변경 파일: `docs/notification-permissions-plan.md`, `docs/product-spec.md`, `docs/progress.md`, `AGENTS.md`.
+
+## 2026-09-18 알림 권한과 설정 UI 계획
+
+- [개발 계획](notification-permissions-plan.md)에 O/X 라디오의 요청·실패·사용 중지 흐름, 실제 기기 권한과 사용자 선택의 구분, 저장값 이전과 환경별 지원 범위를 정리했다.
+- 기존 알림 어댑터의 조회·요청 분리, 공통 훅의 단일 소유, 앱 복귀 시 재확인, 이전 기기 예약 조회와 취소 실패 복구를 구현 순서에 포함했다.
+- 웹은 기존 브라우저 알림음 범위를 유지하며 시스템 알림 미제공을 명시한다. iOS 권한·예약 연동과 자동 검사·실기기 검증을 구분했다.
+- 제품 스펙에 후속 계획 링크를 추가했다. 실행 코드와 의존성은 수정하지 않았다.
+- 변경 파일: `docs/notification-permissions-plan.md`, `docs/product-spec.md`, `docs/progress.md`.
+
 ## 2026-09-17 기능 회귀 테스트 보강
 
 - Worker 진입점을 실제 스케줄러와 연결한 단위 테스트와 실제 브라우저 Worker의 초 경계·완료 검사를 추가했다. 기존 폴백 경계 검사도 유지했다.

@@ -65,7 +65,7 @@ test("migrates hours and steps in minutes without changing a running deadline", 
       (key) => JSON.parse(localStorage.getItem(key) ?? "{}") as unknown,
       SETTINGS_KEY
     )
-  ).toEqual({ rangeMinutes: 5, theme: "white" });
+  ).toEqual({ rangeMinutes: 5, theme: "white", notificationPreference: null });
   const timers = await page.evaluate(
     (key) =>
       JSON.parse(localStorage.getItem(key) ?? "[]") as Array<{

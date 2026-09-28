@@ -1,18 +1,16 @@
 import { BellRing, Check } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
 
+import { selectCompletedTimers } from "@/app/state/timerState";
+import { useAppActions, useAppStore } from "@/app/useAppState";
 import { formatDuration } from "@/domain/timer/timerMath";
-import type { TimerRecord } from "@/domain/timer/timerTypes";
 
-export function CompletionAlert({
-  completedTimers,
-  onAcknowledge,
-  notices,
-}: {
-  notices?: ReactNode;
-  completedTimers: TimerRecord[];
-  onAcknowledge: () => void;
-}) {
+export function CompletionAlert({ notices }: { notices?: ReactNode }) {
+  const completedTimers = useAppStore(useShallow(selectCompletedTimers));
+  const { acknowledgeTimers } = useAppActions();
+  const onAcknowledge = (): void =>
+    acknowledgeTimers(completedTimers.map((timer) => timer.id));
   const dialogRef = useRef<HTMLDialogElement>(null);
   const open = completedTimers.length > 0;
   useEffect(() => {

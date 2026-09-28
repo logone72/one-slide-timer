@@ -29,6 +29,7 @@ one-slide-timer/
   docs/
   tests/
     browser/
+    fixtures/
   ios/
   .husky/
   .github/workflows/verify.yml
@@ -50,14 +51,27 @@ one-slide-timer/
 
 ## 소스 구조
 
+아래 트리는 현재 구현이다. Zustand 도입의 소유권 기준은 [앱 전체 상태 관리 계획](zustand-state-management-plan.md)을 따른다.
+
 ```txt
 src/
   app/
     App.tsx
-    useTimers.ts
-    useSettings.ts
-    useStoredState.ts
-    useTimerNotifications.ts
+    AppStateProvider.tsx
+    useAppState.ts
+    appContext.ts
+    appDependencies.ts
+    appRuntime.ts
+    timerCommands.ts
+    persistence.ts
+    notificationRuntime.ts
+    notificationPermission.ts
+    state/
+      appStore.ts
+      timerState.ts
+      settingsState.ts
+      notificationState.ts
+      storageState.ts
     AppNotices.tsx
 
   domain/
@@ -70,6 +84,7 @@ src/
   features/
     timer-rail/
       TimerRail.tsx
+      RailHeading.tsx
       TimerPin.tsx
       TimerAdjustment.tsx
       useRailLayout.ts
@@ -87,7 +102,11 @@ src/
       SettingsPanel.tsx
       RangeSettings.tsx
       ThemeSettings.tsx
+      NotificationSettings.tsx
       StatusNotice.tsx
+
+    notification-permission/
+      NotificationPermissionPrompt.tsx
 
     completion-alert/
       CompletionAlert.tsx
@@ -98,6 +117,7 @@ src/
       notificationPort.ts
       browserNotifications.ts
       capacitorNotifications.ts
+      nativeSubscription.ts
       syncNotifications.ts
       alertAudio.ts
 
@@ -112,6 +132,7 @@ src/
     base.css
     timer-rail.css
     settings.css
+    notifications.css
     completion-alert.css
 ```
 
@@ -128,9 +149,22 @@ src/
 
 `src/` 내부를 가로지르는 import는 `@/` 경로 별칭을 쓴다. 같은 폴더 안의 작은 import는 `./`를 유지한다.
 
-`notificationPort.ts`는 `ensurePermission`, `scheduleTimer`, `cancelTimer`, `onNotificationAction`만 노출한다. 웹 MVP에서는 앱이 열린 동안 반복 알림음과 복귀 시 완료 처리만 구현하고, `capacitorNotifications.ts`에서 네이티브 예약 알림을 연결한다. 반복 알림음은 `alertAudio.ts`가 웹과 iOS에서 함께 제공한다.
+`notificationPort.ts`는 `checkPermission`, `requestPermission`, `scheduleTimer`, `cancelTimer`, `getPendingTimers`, `sendTest`, `onResume`, `onNotificationAction`을 노출한다. 웹 MVP에서는 앱이 열린 동안 반복 알림음과 복귀 시 완료 처리만 구현하고, `capacitorNotifications.ts`에서 네이티브 예약 알림을 연결한다. 반복 알림음은 `alertAudio.ts`가 웹과 iOS에서 함께 제공한다.
 
 ## UI 구현
+
+### 상태 관리 구조
+
+- 앱 인스턴스별 Zustand store 하나가 타이머·설정·알림·앱 화면의 공유 상태와 동기 변경 액션을 소유한다. 상태 영역별 코드는 `app/state/`에 모으며 domain은 Zustand를 모르게 둔다.
+- `AppStateProvider`는 고정된 store·공개 `AppActions` 참조를 전달한다. 화면에는 상태 전용 selector와 공개 동작만 노출하고 내부 액션·원본 store는 타입과 export로 감춘다.
+- `appRuntime.ts`는 모듈 연결·해제와 공개 동작 참조 조립만 담당한다. 타이머 동작은 `timerCommands.ts`, 저장 복원·재시도는 `persistence.ts`, 알림 연결은 `notificationRuntime.ts`, 권한 조회·요청·최신 결과의 store 반영은 그 내부 모듈 `notificationPermission.ts`에 둔다. 예약 전 권한 재확인도 같은 알림 경로를 사용한다.
+- 최초 저장 복원은 store 인스턴스별로 한 번 시도한다. 같은 인스턴스의 재연결은 Worker·구독만 복구하고 메모리 변경·수정 필드·실패 상태를 보존한다. 실패한 읽기의 복원은 명시적인 재시도로 수행한다.
+- 레일 actor는 `App`에서 하나만 생성해 레일과 권한 안내에 참조를 전달한다. 권한 안내는 `idle` 여부만 구독해 드래그·타이머 액션·시간 조정 중 노출을 보류하고 미리보기는 레일에서 구독한다. actor와 `idle` 여부를 Zustand에 복제하지 않는다.
+- `useTimers`, `useSettings`, `useStoredState`, `useTimerNotifications`의 상태와 외부 작업을 각 책임으로 이전하고 기존 훅을 제거했다. 같은 값을 훅과 store에 함께 보관하지 않는다.
+- 저장 키·형식·읽기 실패 보호·재시도 병합을 유지하며 처음에는 Zustand `persist`를 사용하지 않는다. XState 제스처·시간 조정 입력·DOM 측정·transform 모션은 기존 소유자에 남긴다.
+- 구현 순서는 설정·화면 → 타이머·시각 → 기존 알림·실행 수명 → 구독 정리 → 새 권한 기능이다. 세부 파일과 검증 기준은 위 적용 계획을 따른다.
+
+### 유지할 UI 기준
 
 - 레일, 핀, 라벨, 액션 UI는 DOM/CSS로 만든다.
 - 제스처는 Pointer Events로 처리한다.

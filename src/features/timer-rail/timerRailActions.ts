@@ -11,8 +11,6 @@ export type RailOptions = {
   timers: TimerRecord[];
   rangeMinutes: number;
   color: string;
-  onCreateTimer: (durationMs: number, color: string) => void;
-  onUpdateTimer: (timerId: string, durationMs: number) => void;
 };
 
 export function findTargetTimer(
@@ -25,7 +23,10 @@ export function findTargetTimer(
 
 export function commitTimer(
   change: interaction.TimerChange,
-  options: RailOptions
+  options: {
+    onCreateTimer: (durationMs: number, color: string) => void;
+    onUpdateTimer: (id: string, durationMs: number) => void;
+  }
 ): void {
   if (change.timerId !== null) {
     options.onUpdateTimer(change.timerId, change.durationMs);
