@@ -4,9 +4,10 @@ import { DEFAULT_SETTINGS } from "@/domain/timer/timerTypes";
 
 import { createAppRuntime } from "./appRuntime";
 import { createAppStore } from "./state/appStore";
+import { selectAudioEnabled } from "./state/notificationState";
 import { testDependencies } from "./testDependencies";
 
-it("persists off, stops completion audio, and keeps timers and device notifications independent", async () => {
+it("persists off, stops completion audio, and keeps timers and device notifications independent", () => {
   const { deps } = testDependencies();
   const app = createAppStore();
   const runtime = createAppRuntime(app, deps);
@@ -26,37 +27,35 @@ it("persists off, stops completion audio, and keeps timers and device notificati
   runtime.actions.startTimer(2000, "blue");
   expect(deps.audio.prepareAlertAudio).not.toHaveBeenCalled();
   app.actions.setNow(4000);
-  await runtime.actions.enableAudio();
+  runtime.actions.enableAudio();
   expect(deps.audio.startAlertAudio).toHaveBeenCalledTimes(2);
   runtime.stop();
 });
 
-it("keeps off after failed preparation or a late success following X, and testing does not enable audio", async () => {
+it("restores ON before audio is ready and prepares only when creating a timer", async () => {
   const { deps } = testDependencies();
-  deps.storage.loadSettings.mockReturnValue({
-    ok: true,
-    value: { ...DEFAULT_SETTINGS, audioEnabled: false },
-  });
+  deps.audio.isAlertAudioReady.mockReturnValue(false);
   const app = createAppStore();
   const runtime = createAppRuntime(app, deps);
   runtime.start();
+  expect(selectAudioEnabled(app.getState())).toBe(true);
+  expect(deps.audio.prepareAlertAudio).not.toHaveBeenCalled();
+  expect(deps.audio.startAlertAudio).not.toHaveBeenCalled();
   deps.audio.prepareAlertAudio.mockResolvedValueOnce(false);
-  await runtime.actions.enableAudio();
-  expect(app.getState().settings.audioEnabled).toBe(false);
-  let finish: (ready: boolean) => void = () => undefined;
-  deps.audio.prepareAlertAudio.mockImplementationOnce(
-    () =>
-      new Promise((resolve) => {
-        finish = resolve;
-      })
-  );
-  const enabling = runtime.actions.enableAudio();
+  runtime.actions.startTimer(1000, "blue");
+  expect(deps.audio.prepareAlertAudio).toHaveBeenCalledOnce();
+  await Promise.resolve();
+  expect(selectAudioEnabled(app.getState())).toBe(true);
+  expect(deps.audio.startAlertAudio).not.toHaveBeenCalled();
+  app.actions.setNow(2000);
+  expect(deps.audio.startAlertAudio).toHaveBeenCalledOnce();
   runtime.actions.disableAudio();
-  finish(true);
-  await enabling;
-  runtime.actions.testAudio();
-  expect(app.getState().settings.audioEnabled).toBe(false);
-  expect(deps.audio.testAlertAudio).toHaveBeenCalledOnce();
+  deps.audio.prepareAlertAudio.mockClear();
+  runtime.actions.startTimer(2000, "blue");
+  expect(deps.audio.prepareAlertAudio).not.toHaveBeenCalled();
+  runtime.actions.enableAudio();
+  expect(selectAudioEnabled(app.getState())).toBe(true);
+  expect(deps.audio.prepareAlertAudio).not.toHaveBeenCalled();
   runtime.stop();
 });
 

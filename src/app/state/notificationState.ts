@@ -13,6 +13,7 @@ export type NotificationState = {
   permission: NotificationPermission | null;
   phase: "idle" | "checking" | "requesting" | "error";
   promptHandled: boolean;
+  promptOpen: boolean;
   audioReady: boolean;
   failed: boolean;
   message: string;
@@ -23,6 +24,7 @@ export const initialNotificationState = (): NotificationState => ({
   permission: null,
   phase: "idle",
   promptHandled: false,
+  promptOpen: false,
   audioReady: false,
   failed: false,
   message: "",
@@ -45,11 +47,16 @@ export const selectNotificationsEnabled = (state: AppState): boolean =>
   !state.notifications.failed &&
   selectNotificationsPermitted(state);
 export const selectShouldPrompt = (state: AppState): boolean =>
-  state.notifications.permission === "prompt" &&
-  state.notifications.phase === "idle" &&
-  !state.notifications.promptHandled &&
-  state.settings.notificationPreference !== false &&
-  state.settingsStorage.read === "ready";
+  state.notifications.promptOpen;
+
+export const selectAudioEnabled = (state: AppState): boolean =>
+  state.settings.audioEnabled &&
+  (state.settingsStorage.read === "ready" ||
+    state.editedSettings.audioEnabled === true);
+
+// 알림음 ON은 저장된 선택이다. 새 페이지의 재생 준비 여부로 선택을 바꾸지 않는다.
+export const needsNotificationSetup = (state: AppState): boolean =>
+  !selectNotificationsEnabled(state) || !selectAudioEnabled(state);
 
 export function selectPermissionNotice(state: AppState): string {
   if (state.settingsOpen) {

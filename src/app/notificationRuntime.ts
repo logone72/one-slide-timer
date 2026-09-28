@@ -3,13 +3,13 @@ import { connectAudio } from "./notificationAudio";
 import { createPermissionController } from "./notificationPermission";
 import type { AppStore } from "./state/appStore";
 import {
+  needsNotificationSetup,
   selectDeliverySnapshot,
   selectNotificationsEnabled,
 } from "./state/notificationState";
 
 export class NotificationRuntime {
   private active = false;
-  private audioChoice = 0;
   private stopListeners = (): void => undefined;
   private readonly permission;
   private readonly delivery;
@@ -37,6 +37,22 @@ export class NotificationRuntime {
     return this.active && selectNotificationsEnabled(this.app.getState());
   }
   private synchronize(): void {
+    const state = this.app.getState();
+    // 초기 조회가 끝난 뒤 한 번만 판단한다. 모달은 요청 결과와 무관하게 명시적으로 닫는다.
+    if (
+      !state.notifications.promptHandled &&
+      state.settingsStorage.read === "ready" &&
+      (state.notifications.phase === "error" ||
+        (state.notifications.phase === "idle" &&
+          state.notifications.permission !== null))
+    ) {
+      this.app.actions.updateNotifications({
+        promptHandled: true,
+        promptOpen:
+          !state.settings.hideNotificationPrompt &&
+          needsNotificationSetup(state),
+      });
+    }
     this.delivery.update(selectDeliverySnapshot(this.app.getState()));
   }
   private listen(): void {
@@ -65,7 +81,6 @@ export class NotificationRuntime {
     const unsubscribe = this.app.subscribe(() => this.synchronize());
     return () => {
       this.active = false;
-      this.audioChoice++;
       this.permission.deactivate();
       stopDelivery();
       unsubscribe();
@@ -92,18 +107,12 @@ export class NotificationRuntime {
   };
   readonly disableNotifications = (): void => this.permission.disable();
   readonly deferNotificationPrompt = (): void => this.permission.defer();
-  readonly enableAudio = async (): Promise<void> => {
-    const choice = ++this.audioChoice;
-    const ready = await this.deps.audio.prepareAlertAudio();
-    // 준비 도중 X를 선택했다면 늦게 도착한 성공으로 다시 켜지 않는다.
-    if (this.active && choice === this.audioChoice) {
-      this.app.actions.setAudioEnabled(ready);
-    }
+  readonly hideNotificationPrompt = (): void => {
+    this.app.actions.hideNotificationPrompt();
+    this.permission.defer();
   };
-  readonly disableAudio = (): void => {
-    this.audioChoice++;
-    this.app.actions.setAudioEnabled(false);
-  };
+  readonly enableAudio = (): void => this.app.actions.setAudioEnabled(true);
+  readonly disableAudio = (): void => this.app.actions.setAudioEnabled(false);
   readonly testAudio = (): void => {
     void this.deps.audio.testAlertAudio();
   };

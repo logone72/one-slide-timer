@@ -1,5 +1,6 @@
 import type { AppDependencies } from "./appDependencies";
 import type { AppState, AppStore } from "./state/appStore";
+import { selectAudioEnabled } from "./state/notificationState";
 import { selectHasCompleted } from "./state/timerState";
 
 export function connectAudio(app: AppStore, deps: AppDependencies): () => void {
@@ -31,10 +32,5 @@ export function connectAudio(app: AppStore, deps: AppDependencies): () => void {
 
 // 저장소를 읽지 못했다면 저장된 X를 무시하고 기본값으로 소리를 내지 않는다.
 function shouldPlay(state: AppState): boolean {
-  return (
-    state.settings.audioEnabled &&
-    (state.settingsStorage.read === "ready" ||
-      state.editedSettings.audioEnabled === true) &&
-    selectHasCompleted(state)
-  );
+  return selectAudioEnabled(state) && selectHasCompleted(state);
 }

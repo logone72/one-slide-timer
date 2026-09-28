@@ -9,7 +9,11 @@ test("interpolates timer transforms between ticks and respects reduced motion", 
   await page.addInitScript(() => {
     localStorage.setItem(
       "one-slide-timer:settings",
-      JSON.stringify({ rangeMinutes: 5, theme: "forest" })
+      JSON.stringify({
+        hideNotificationPrompt: true,
+        rangeMinutes: 5,
+        theme: "forest",
+      })
     );
     localStorage.setItem(
       "one-slide-timer:timers",

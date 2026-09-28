@@ -2,6 +2,29 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-28 알림음 사용 선택과 재생 준비 분리
+
+- 검증: `npm run verify`(94개 테스트), 빌드, 관련 브라우저 검사 30개 통과. ON/OFF 새로고침 유지, 준비 전 ON 표시, 모달 조건, 등록 시 준비·완료 시 재생·OFF 시 준비 생략을 확인했다.
+
+- 알림음 토글·테스트 버튼·초기 안내는 저장된 `audioEnabled`를 따른다. 새로고침으로 오디오 객체가 없어져도 ON을 유지하며, 준비 실패나 지연이 사용 선택을 변경하지 않는다.
+- ON에서 새 타이머 등록 조작이 기존 오디오 준비 경로를 직접 호출한다. 등록할 때는 소리를 내지 않고 완료 시 반복 재생한다. OFF 또는 설정 읽기 실패 상태에서는 임의로 오디오를 준비하지 않는다.
+- 변경 파일: `src/app/{appRuntime,notificationRuntime,notificationAudio,notificationAudio.test,notificationPrompt.test}.ts`, `src/app/state/notificationState.ts`, `src/features/settings/AudioSettings.tsx`, `tests/browser/{audio-settings,notification-prompt,notification-permissions}.spec.ts`, `CONTEXT.md`, `docs/{product-spec,notification-permissions-plan,progress}.md`.
+
+## 2026-09-28 시작 모달 표시 조건 정정
+
+- 검증: `npm run verify`(94개 테스트), 빌드, Chromium·모바일 WebKit의 관련 브라우저 테스트 24개 통과. 명시적 OFF 후 새로고침, 영구 숨김, 설명 노출과 모달 좌우 여백을 확인했다.
+
+- 기기 알림·알림음 중 하나라도 OFF이면 새 실행에서 모달을 표시한다. 명시적 OFF와 미지원 제외 조건을 제거하고, `다시 묻지 않기`만 영구 숨김 조건으로 유지했다. 기존 완료·Escape의 실행 중 닫기와 다른 모달의 우선순위는 유지한다.
+- 제목 아래 짧은 설명을 연결하고, 모달을 앱 너비보다 좁게 제한해 모바일·데스크톱 모두 좌우 여백을 확보했다.
+- 변경 파일: `src/app/state/notificationState.ts`, `src/features/settings/AudioSettings.tsx`, `src/features/notification-permission/NotificationPermissionPrompt.tsx`, `src/styles/notifications.css`, `src/app/notificationPrompt.test.ts`, `tests/browser/notification-prompt.spec.ts`, `CONTEXT.md`, `docs/{product-spec,notification-permissions-plan,progress}.md`.
+
+## 2026-09-28 시작 알림 모달과 영구 숨김
+
+- 검증: `npm run verify`(92개 테스트), 빌드 통과. 브라우저 전체 실행은 81개 통과·1개 제외·저장값 기대치 2개 실패였으며, 기대치를 수정한 뒤 설정 테스트 12개가 모두 통과했다. 실제 iOS 권한 창은 미검증이다.
+- 시작 모달을 기기 알림·알림음 공통 토글과 완료 버튼으로 변경했다. 권한 요청 중에도 모달을 유지하고, 아래 낮은 강조의 `다시 묻지 않기`를 설정 저장·복구 경로에 연결했다.
+- 설정 읽기·초기 권한 조회 후 실제 준비 상태를 한 번 판단한다. 명시적 사용 중지와 미지원 채널을 재권유하지 않으며, 안내를 닫아도 설정의 토글은 계속 사용할 수 있다.
+- 변경 파일: `src/app/{appRuntime,notificationRuntime,notificationPermission}.ts`, `src/app/state/{notificationState,settingsState}.ts`, `src/domain/timer/{timerTypes,timerStorage}.ts`, `src/features/notification-permission/NotificationPermissionPrompt.tsx`, `src/features/settings/{AudioSettings,NotificationSettings}.tsx`, `src/styles/notifications.css`, 관련 단위·브라우저 테스트와 `playwright.config.ts`, `CONTEXT.md`, 제품 스펙·알림 계획·이 문서.
+
 ## 2026-09-28 설정의 권한 상태 문구 제거
 
 - `notification-status`와 상태 문구 생성 함수를 삭제하고 토글의 해당 `aria-describedby` 참조도 제거했다. 권한 조회·요청·토글 상태 동작은 유지했다.

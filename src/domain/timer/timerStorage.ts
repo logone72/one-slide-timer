@@ -70,6 +70,7 @@ export function loadSettings(): StorageRead<AppSettings> {
     value: {
       // 기존 저장값에는 이 필드가 없다. 기존 소리 동작을 유지한다.
       audioEnabled: readAudioEnabled(saved.audioEnabled),
+      hideNotificationPrompt: saved.hideNotificationPrompt === true,
       notificationPreference: readNotificationPreference(
         saved.notificationPreference
       ),

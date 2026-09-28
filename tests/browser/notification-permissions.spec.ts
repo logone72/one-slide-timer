@@ -28,11 +28,11 @@ test("asks only after confirmation, persists off, and leaves requests alive when
 }) => {
   await page.goto(harness);
   const prompt = page.getByRole("dialog", {
-    name: "타이머 완료 알림을 받을까요?",
+    name: "완료 알림 설정",
   });
   await expect(prompt).toBeVisible();
   expect(await page.evaluate(() => window.notificationTest.requested)).toBe(0);
-  await prompt.getByRole("button", { name: "나중에" }).click();
+  await prompt.getByRole("button", { name: "다시 묻지 않기" }).click();
   await page.evaluate(() => window.notificationTest.resume());
   await expect(prompt).toBeHidden();
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
@@ -67,8 +67,9 @@ test("shows denial and errors separately and recovers through the off switch", a
   page,
 }) => {
   await page.goto(harness);
-  await page.getByRole("button", { name: "확인", exact: true }).click();
+  await page.getByRole("switch", { name: "기기 알림", exact: true }).click();
   await page.evaluate(() => window.notificationTest.resolveRequest("denied"));
+  await page.getByRole("button", { name: "완료", exact: true }).click();
   await expect(
     page
       .getByRole("status")
@@ -125,12 +126,12 @@ test("defers late startup permission during rail adjustment and restores focus",
   await expect(adjustment).toBeVisible();
   await page.evaluate(() => window.notificationTest.resolveCheck());
   const prompt = page.getByRole("dialog", {
-    name: "타이머 완료 알림을 받을까요?",
+    name: "완료 알림 설정",
   });
   await expect(prompt).toBeHidden();
   await page.keyboard.press("Escape");
   await expect(prompt).toBeVisible();
-  await prompt.getByRole("button", { name: "나중에" }).click();
+  await prompt.getByRole("button", { name: "완료" }).click();
   await expect(page.locator(".start-pin")).toBeFocused();
 });
 
@@ -147,8 +148,9 @@ test("missing browser API exposes unsupported system alerts and accessible indep
   ).toBeDisabled();
   await expect(page.locator("#notification-status")).toHaveCount(0);
   const sound = page.getByRole("button", { name: "소리 테스트" });
-  await expect(sound).toHaveCount(0);
-  await page.getByRole("switch", { name: "알림음", exact: true }).click();
+  await expect(
+    page.getByRole("switch", { name: "알림음", exact: true })
+  ).toBeChecked();
   await sound.click();
   await expect(page.getByRole("button", { name: "알림음 켜기" })).toHaveCount(
     0
@@ -162,7 +164,7 @@ for (const outcome of ["error", "prompt"] as const) {
     page,
   }) => {
     await page.goto(harness);
-    await page.getByRole("button", { name: "확인", exact: true }).click();
+    await page.getByRole("switch", { name: "기기 알림", exact: true }).click();
     await page.evaluate((result) => {
       if (result === "error") {
         window.notificationTest.rejectRequest();
@@ -170,6 +172,7 @@ for (const outcome of ["error", "prompt"] as const) {
         window.notificationTest.resolveRequest("prompt");
       }
     }, outcome);
+    await page.getByRole("button", { name: "완료", exact: true }).click();
     await expect(
       page.getByRole("status").filter({ hasText: "기기 알림 권한" })
     ).toBeVisible();

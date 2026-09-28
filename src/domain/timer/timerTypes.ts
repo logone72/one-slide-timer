@@ -51,6 +51,7 @@ export type AppSettings = {
   theme: ThemeId;
   notificationPreference: boolean | null;
   audioEnabled: boolean;
+  hideNotificationPrompt: boolean;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -58,4 +59,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: "white",
   notificationPreference: null,
   audioEnabled: true,
+  hideNotificationPrompt: false,
 };

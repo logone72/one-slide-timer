@@ -8,6 +8,7 @@ test("browser permission request starts only from confirmation", async ({
 }) => {
   await context.clearPermissions();
   await page.addInitScript(() => {
+    localStorage.removeItem("one-slide-timer:settings");
     let permission = "default";
     Object.defineProperty(window, "Notification", {
       configurable: true,
@@ -25,11 +26,13 @@ test("browser permission request starts only from confirmation", async ({
   });
   await page.goto("/");
   const prompt = page.getByRole("dialog", {
-    name: "타이머 완료 알림을 받을까요?",
+    name: "완료 알림 설정",
   });
   await expect(prompt).toBeVisible();
   expect(await page.locator("html").getAttribute("data-requested")).toBeNull();
-  await prompt.getByRole("button", { name: "확인", exact: true }).click();
+  await prompt.getByRole("switch", { name: "기기 알림", exact: true }).click();
+  await expect(prompt).toBeVisible();
+  await prompt.getByRole("button", { name: "완료", exact: true }).click();
   await expect(prompt).toBeHidden();
   await expect(page.locator("html")).toHaveAttribute("data-requested", "yes");
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();

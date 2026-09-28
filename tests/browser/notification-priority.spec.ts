@@ -18,12 +18,12 @@ test("keeps permission guidance out of a pointer drag until release", async ({
   await page.mouse.move(pin.x + pin.width / 2, pin.y - 120, { steps: 4 });
   await page.evaluate(() => window.notificationTest.resolveCheck());
   const prompt = page.getByRole("dialog", {
-    name: "타이머 완료 알림을 받을까요?",
+    name: "완료 알림 설정",
   });
   await expect(prompt).toBeHidden();
   await page.mouse.up();
   await expect(prompt).toBeVisible();
-  await prompt.getByRole("button", { name: "나중에" }).click();
+  await prompt.getByRole("button", { name: "완료" }).click();
   await expect(page.getByTestId("timer-pin")).toHaveCount(1);
 });
 
@@ -46,7 +46,7 @@ test("completion preempts guidance and returns to an unhandled prompt after ackn
   );
   await page.goto(harness);
   const prompt = page.getByRole("dialog", {
-    name: "타이머 완료 알림을 받을까요?",
+    name: "완료 알림 설정",
   });
   await expect(prompt).toBeVisible();
   await page.clock.runFor(10000);

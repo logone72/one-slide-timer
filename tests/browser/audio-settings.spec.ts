@@ -8,9 +8,7 @@ test("audio toggle persists separately from device permission and supports keybo
   const on = page.getByRole("switch", { name: "알림음", exact: true });
   const off = on;
   const testSound = page.getByRole("button", { name: "소리 테스트" });
-  await expect(on).not.toBeChecked();
-  await expect(testSound).toHaveCount(0);
-  await on.click();
+  await expect(on).toBeChecked();
   await expect(on).toBeChecked();
   await expect(testSound).toBeVisible();
   await off.uncheck();
@@ -25,6 +23,9 @@ test("audio toggle persists separately from device permission and supports keybo
   await page.keyboard.press("Space");
   await expect(on).toBeChecked();
   await expect(on).toBeFocused();
+  await page.reload();
+  await page.getByRole("button", { name: "설정 열기", exact: true }).click();
+  await expect(on).toBeChecked();
   await testSound.click();
   await expect(on).toBeChecked();
   expect(

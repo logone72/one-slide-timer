@@ -98,7 +98,7 @@ export function createPermissionController(
       app.actions.setNotificationPreference(false);
       update({ promptHandled: true });
     },
-    defer: (): void => update({ promptHandled: true }),
+    defer: (): void => update({ promptHandled: true, promptOpen: false }),
     activate: (): void => {
       active = true;
     },

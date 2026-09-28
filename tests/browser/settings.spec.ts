@@ -4,20 +4,19 @@ import { DEFAULT_SETTINGS } from "../../src/domain/timer/timerTypes";
 
 const { expect, test } = playwright;
 const SETTINGS_KEY = "one-slide-timer:settings";
+const defaults = { ...DEFAULT_SETTINGS, hideNotificationPrompt: true };
 const TIMERS_KEY = "one-slide-timer:timers";
 
-test("migrates hours and steps in minutes without changing a running deadline", async ({
-  page,
-}) => {
+test("migrates range without changing deadlines", async ({ page }) => {
   await page.clock.setFixedTime(new Date());
   const endAt = Date.now() + 1_800_000;
   await page.addInitScript((deadline) => {
-    if (localStorage.getItem("one-slide-timer:settings") !== null) {
+    if (localStorage.getItem("one-slide-timer:timers") !== null) {
       return;
     }
     localStorage.setItem(
       "one-slide-timer:settings",
-      JSON.stringify({ rangeHours: 1 })
+      JSON.stringify({ hideNotificationPrompt: true, rangeHours: 1 })
     );
     localStorage.setItem(
       "one-slide-timer:timers",
@@ -67,7 +66,7 @@ test("migrates hours and steps in minutes without changing a running deadline", 
       (key) => JSON.parse(localStorage.getItem(key) ?? "{}") as unknown,
       SETTINGS_KEY
     )
-  ).toEqual({ ...DEFAULT_SETTINGS, rangeMinutes: 5 });
+  ).toEqual({ ...defaults, rangeMinutes: 5 });
   const timers = await page.evaluate(
     (key) =>
       JSON.parse(localStorage.getItem(key) ?? "[]") as Array<{
@@ -86,9 +85,7 @@ test("migrates hours and steps in minutes without changing a running deadline", 
   await expect(page.getByTestId("timer-pin").last()).toContainText("01:00");
 });
 
-test("all four themes apply to the entire app, persist, and support keyboard selection", async ({
-  page,
-}) => {
+test("persists themes with keyboard selection", async ({ page }) => {
   await page.goto("/");
   const surfaces = new Set<string>();
   for (const [id, name] of [
@@ -125,14 +122,16 @@ test("all four themes apply to the entire app, persist, and support keyboard sel
 });
 
 for (const theme of ["white", "forest", "ocean", "midnight"]) {
-  test(`${theme} keeps timer and completion colors readable`, async ({
-    page,
-  }) => {
+  test(`${theme} contrast`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.addInitScript((id) => {
+    await page.addInitScript((theme) => {
       localStorage.setItem(
         "one-slide-timer:settings",
-        JSON.stringify({ rangeMinutes: 5, theme: id })
+        JSON.stringify({
+          hideNotificationPrompt: true,
+          rangeMinutes: 5,
+          theme,
+        })
       );
       if (localStorage.getItem("one-slide-timer:timers") !== null) {
         return;

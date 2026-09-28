@@ -2,6 +2,7 @@ import type { AppDependencies } from "./appDependencies";
 import { NotificationRuntime } from "./notificationRuntime";
 import { createPersistence } from "./persistence";
 import type { AppStore } from "./state/appStore";
+import { selectAudioEnabled } from "./state/notificationState";
 import { createTimerCommands } from "./timerCommands";
 
 export function createAppRuntime(app: AppStore, deps: AppDependencies) {
@@ -14,7 +15,7 @@ export function createAppRuntime(app: AppStore, deps: AppDependencies) {
       now: deps.now,
       newId: deps.newId,
       prepareAudio: () =>
-        app.getState().settings.audioEnabled
+        selectAudioEnabled(app.getState())
           ? deps.audio.prepareAlertAudio()
           : Promise.resolve(false),
     }),
@@ -30,6 +31,7 @@ export function createAppRuntime(app: AppStore, deps: AppDependencies) {
     sendTestNotification: notifications.sendTestNotification,
     requestNotifications: notifications.requestNotifications,
     disableNotifications: notifications.disableNotifications,
+    hideNotificationPrompt: notifications.hideNotificationPrompt,
     deferNotificationPrompt: notifications.deferNotificationPrompt,
     refreshNotificationPermission: notifications.refreshNotificationPermission,
     retryNotifications: notifications.retryNotifications,

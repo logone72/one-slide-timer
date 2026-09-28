@@ -27,6 +27,7 @@ it("migrates legacy status, colors and hours without changing identity or deadli
     ok: true,
     value: {
       audioEnabled: true,
+      hideNotificationPrompt: false,
       notificationPreference: null,
       rangeMinutes: 120,
       theme: "white",
@@ -56,6 +57,7 @@ it("migrates legacy status, colors and hours without changing identity or deadli
   expect(
     saveSettings({
       audioEnabled: true,
+      hideNotificationPrompt: false,
       notificationPreference: null,
       rangeMinutes: 25,
       theme: "midnight",
@@ -65,6 +67,7 @@ it("migrates legacy status, colors and hours without changing identity or deadli
     ok: true,
     value: {
       audioEnabled: true,
+      hideNotificationPrompt: false,
       notificationPreference: null,
       rangeMinutes: 25,
       theme: "midnight",
@@ -127,7 +130,12 @@ it("normalizes old ranges and retired themes", () => {
     localStorage.setItem("one-slide-timer:settings", JSON.stringify(saved));
     expect(loadSettings()).toEqual({
       ok: true,
-      value: { ...expected, audioEnabled: true, notificationPreference: null },
+      value: {
+        ...expected,
+        audioEnabled: true,
+        hideNotificationPrompt: false,
+        notificationPreference: null,
+      },
     });
   }
 });
@@ -155,6 +163,7 @@ it("migrates missing notification choice and validates it without changing other
         rangeMinutes: 25,
         theme: "ocean",
         audioEnabled: true,
+        hideNotificationPrompt: false,
         notificationPreference: expected,
       },
     });
@@ -175,6 +184,19 @@ it("restores saved audio choices and migrates missing or invalid values", () => 
     expect(loadSettings()).toEqual({
       ok: true,
       value: { ...DEFAULT_SETTINGS, audioEnabled: expected },
+    });
+  }
+});
+
+it("validates persisted prompt dismissal and migrates legacy settings", () => {
+  for (const saved of [undefined, false, true, "true", null]) {
+    localStorage.setItem(
+      "one-slide-timer:settings",
+      JSON.stringify({ hideNotificationPrompt: saved })
+    );
+    expect(loadSettings()).toEqual({
+      ok: true,
+      value: { ...DEFAULT_SETTINGS, hideNotificationPrompt: saved === true },
     });
   }
 });

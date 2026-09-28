@@ -38,7 +38,7 @@ export function NotificationSettings() {
   );
 }
 
-function NotificationChoices() {
+export function NotificationChoices() {
   const notification = useAppStore((state) => state.notifications);
   const enabled = useAppStore(selectNotificationsEnabled);
   const actions = useAppActions();

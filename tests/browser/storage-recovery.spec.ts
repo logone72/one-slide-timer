@@ -198,5 +198,6 @@ test("settings recovery preserves fields untouched while reads were blocked", as
     theme: "ocean",
     notificationPreference: null,
     audioEnabled: true,
+    hideNotificationPrompt: false,
   });
 });

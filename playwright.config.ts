@@ -11,6 +11,21 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4173",
     trace: "on-first-retry",
+    // 일반 기능 검사는 안내를 닫은 사용자를 기준으로 한다. 시작 안내 검사는 빈 저장소를 쓴다.
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: "http://127.0.0.1:4173",
+          localStorage: [
+            {
+              name: "one-slide-timer:settings",
+              value: JSON.stringify({ hideNotificationPrompt: true }),
+            },
+          ],
+        },
+      ],
+    },
   },
   webServer: [
     {
