@@ -106,7 +106,7 @@ test("switching from keyboard preview to the adjustment dialog cancels the previ
   await expect(page.getByTestId("timer-pin")).toHaveCount(1);
 });
 
-test("audio suspension and closure turn the switch off and recover through the same switch", async ({
+test("audio suspension and closure preserve ON and recover on timer registration", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -133,15 +133,28 @@ test("audio suspension and closure turn the switch off and recover through the s
       window as Window & { testAudioContext?: AudioContext }
     ).testAudioContext?.suspend()
   );
-  await expect(activate).not.toBeChecked();
-  await activate.click();
   await expect(activate).toBeChecked();
+  await page.getByRole("button", { name: "타이머로 돌아가기" }).click();
+  await page.getByRole("button", { name: "새 타이머 시작" }).focus();
+  await page.keyboard.press("Shift+ArrowUp");
+  await page.keyboard.press("Enter");
+  const audioState = () =>
+    page.evaluate(
+      () =>
+        (window as Window & { testAudioContext?: AudioContext })
+          .testAudioContext?.state
+    );
+  await expect.poll(audioState).toBe("running");
   await page.evaluate(() =>
     (
       window as Window & { testAudioContext?: AudioContext }
     ).testAudioContext?.close()
   );
-  await expect(activate).not.toBeChecked();
-  await activate.click();
+  await page.getByRole("button", { name: "설정 열기", exact: true }).click();
   await expect(activate).toBeChecked();
+  await page.getByRole("button", { name: "타이머로 돌아가기" }).click();
+  await page.getByRole("button", { name: "새 타이머 시작" }).focus();
+  await page.keyboard.press("Shift+ArrowUp");
+  await page.keyboard.press("Enter");
+  await expect.poll(audioState).toBe("running");
 });

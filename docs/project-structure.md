@@ -28,6 +28,7 @@ one-slide-timer/
     manifest.webmanifest
     favicon.svg
   docs/
+    images/                 # README에 사용하는 실제 앱 화면 예시
   tests/
     browser/
     fixtures/

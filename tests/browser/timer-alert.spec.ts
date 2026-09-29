@@ -25,7 +25,7 @@ test("completion repeats audio without restarting for added timers and acknowled
     localStorage.setItem(
       "one-slide-timer:timers",
       JSON.stringify(
-        [10_000, 10_750, 60_000].map((duration, index) => ({
+        [10_000, 10_750].map((duration, index) => ({
           id: String(index),
           createdAt: Date.now(),
           endAt: Date.now() + duration,
@@ -35,12 +35,11 @@ test("completion repeats audio without restarting for added timers and acknowled
     );
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "설정 열기", exact: true }).click();
-  await page.getByRole("switch", { name: "알림음", exact: true }).click();
-  await expect(
-    page.getByRole("switch", { name: "알림음", exact: true })
-  ).toBeChecked();
-  await page.getByRole("button", { name: "타이머로 돌아가기" }).click();
+  // 등록 조작이 오디오를 준비한다. 기존 두 타이머와 새 1분 타이머를 함께 유지한다.
+  await page.getByRole("button", { name: "새 타이머 시작" }).focus();
+  await page.keyboard.press("Shift+ArrowUp");
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("timer-pin")).toHaveCount(3);
   const beeps = () =>
     page.evaluate(
       () => (window as Window & { beepTimes?: number[] }).beepTimes ?? []
@@ -74,5 +73,6 @@ test("completion repeats audio without restarting for added timers and acknowled
         localStorage.getItem("one-slide-timer:timers") ?? "[]"
       ) as Array<{ id: string }>
   );
-  expect(stored.map((timer) => timer.id)).toEqual(["2"]);
+  expect(stored).toHaveLength(1);
+  expect(["0", "1"]).not.toContain(stored[0]?.id);
 });
