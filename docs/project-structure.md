@@ -27,6 +27,7 @@ one-slide-timer/
     notification-sw.js
     manifest.webmanifest
     favicon.svg
+    icons/                  # favicon.svg에서 생성한 PWA·iOS 홈 화면 PNG
   docs/
     images/                 # README에 사용하는 실제 앱 화면 예시
   tests/
@@ -183,6 +184,17 @@ src/
 ## PWA 범위
 
 - 웹 배포에는 manifest, iOS 홈 화면 메타태그와 알림 표시·클릭 전용 서비스 워커를 둔다.
+- 설치 아이콘은 `public/favicon.svg`를 원본으로 사용한다. 192·512px PNG는 불투명 흰색 배경과 중앙 안전 영역을 유지해 일반·maskable 용도로 함께 쓰며, iOS 홈 화면에는 180px PNG를 연결한다.
+- manifest의 `id`는 `/one-slide-timer/`로 유지한다. 시작 주소·scope·아이콘 URL은 manifest 기준 상대 경로로 지정해 Pages 하위 경로와 로컬 루트 모두 지원한다.
+- 아이콘 원본을 수정하면 librsvg의 `rsvg-convert`로 PNG를 다시 만든다. 앱 실행·배포에는 이 도구가 필요하지 않다.
+
+```bash
+for size in 192 512; do
+  rsvg-convert -w "$size" -h "$size" -b white -o "public/icons/icon-$size.png" public/favicon.svg
+done
+rsvg-convert -w 180 -h 180 -b white -o public/icons/apple-touch-icon.png public/favicon.svg
+```
+
 - offline cache·fetch 가로채기·서버 Web Push는 만들지 않는다.
 - 캐싱 때문에 배포 확인이 헷갈리는 문제를 피한다.
 

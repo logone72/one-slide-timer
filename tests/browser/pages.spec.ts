@@ -51,3 +51,93 @@ test("Pages 하위 경로에서 앱과 홈 화면 시작 URL 및 알림 워커�
   );
   expect(failedResources).toEqual([]);
 });
+
+test("PWA 아이콘·앱 식별자·실행 범위가 배포 경로에서 유효하다", async ({
+  page,
+}) => {
+  const basePath = process.env.PAGES_BASE_PATH ?? "/";
+  await page.goto(basePath);
+  const manifestUrl = await page
+    .locator('link[rel="manifest"]')
+    .evaluate((link: HTMLLinkElement) => link.href);
+  const response = await page.request.get(manifestUrl);
+  expect(response.ok()).toBe(true);
+  const manifest = (await response.json()) as {
+    id: string;
+    scope: string;
+    start_url: string;
+    icons: Array<{ src: string; sizes: string; purpose: string }>;
+  };
+  expect(new URL(manifest.scope, manifestUrl).pathname).toBe(basePath);
+  expect(new URL(manifest.start_url, manifestUrl).pathname).toBe(basePath);
+  expect(manifest.id).toBe("/one-slide-timer/");
+  expect(manifest.icons.map((icon) => icon.sizes)).toEqual([
+    "192x192",
+    "512x512",
+  ]);
+  for (const icon of manifest.icons) {
+    expect(icon.purpose.split(" ")).toEqual(
+      expect.arrayContaining(["any", "maskable"])
+    );
+  }
+  const appleUrl = await page
+    .locator('link[rel="apple-touch-icon"]')
+    .evaluate((link: HTMLLinkElement) => link.href);
+  const icons = [
+    ...manifest.icons.map((icon) => ({
+      url: new URL(icon.src, manifestUrl).href,
+      size: Number(icon.sizes.split("x")[0]),
+    })),
+    { url: appleUrl, size: 180 },
+  ];
+  for (const icon of icons) {
+    expect(new URL(icon.url).pathname.startsWith(`${basePath}icons/`)).toBe(
+      true
+    );
+    const actual = await page.evaluate(async (url) => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d");
+      if (context === null) {
+        throw new Error("Missing image inspection context");
+      }
+      context.drawImage(image, 0, 0);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      let opaque = true;
+      let safe = true;
+      let hasArtwork = false;
+      for (let index = 0; index < data.length; index += 4) {
+        if (data[index + 3] !== 255) {
+          opaque = false;
+        }
+        if ((data[index] ?? 255) < 240) {
+          hasArtwork = true;
+          const pixel = index / 4;
+          const x = (pixel % canvas.width) + 0.5 - canvas.width / 2;
+          const y = Math.floor(pixel / canvas.width) + 0.5 - canvas.height / 2;
+          if (Math.hypot(x, y) > canvas.width * 0.4) {
+            safe = false;
+          }
+        }
+      }
+      return {
+        width: canvas.width,
+        height: canvas.height,
+        opaque,
+        safe,
+        hasArtwork,
+      };
+    }, icon.url);
+    expect(actual).toEqual({
+      width: icon.size,
+      height: icon.size,
+      opaque: true,
+      safe: true,
+      hasArtwork: true,
+    });
+  }
+});

@@ -2,6 +2,24 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-29 캐치프레이즈 반영
+
+- 선택한 문구 “시간을 맞추는 가벼운 손짓.”을 README 상단, HTML 설명·공유 설명, PWA 설명에 반영했다.
+- 변경 파일: `README.md`, `index.html`, `public/manifest.webmanifest`, `docs/progress.md`.
+
+## 2026-09-29 페이지 설명과 공유 메타데이터 추가
+
+- HTML에 manifest와 동일한 한국어 설명, 공개 주소의 canonical, Open Graph 제목·설명·주소·언어·아이콘 이미지 정보를 추가했다. 공유 이미지는 기존 512px PWA 아이콘을 재사용하며 Twitter 카드는 정사각형 이미지에 맞는 summary를 사용한다.
+- 변경 파일: `index.html`, `docs/progress.md`.
+
+## 2026-09-29 파비콘 기반 PWA 설치 준비
+
+- 기존 `favicon.svg`를 원본으로 192·512px 설치 아이콘과 180px iOS 홈 화면 아이콘을 만들었다. 흰색 불투명 배경과 심볼의 maskable 안전 영역을 유지해 일반·maskable 아이콘을 함께 제공한다.
+- manifest에 기존 Pages 시작 주소와 동일한 앱 `id`, 상대 `scope`, 한국어 메타데이터를 추가하고 HTML에 `apple-touch-icon`을 연결했다. SVG에서 PNG를 재생성하는 명령을 구조 문서에 기록했다.
+- 검증: lint·포맷·타입·단위 테스트 94개 통과. 기본 경로의 PWA 브라우저 검사 2개와 Pages 경로 검사 3개가 통과했다. Chromium·WebKit에서 이미지 해상도·불투명도·심볼 안전 영역·manifest 경로를 검사했고 기존 Pages 타이머 복원·알림 워커 검사도 통과했다.
+- 실제 기기 설치·재실행 검증은 사용자가 진행한다. 오프라인 캐시·백그라운드 예약 기능은 추가하지 않았으며 커밋·푸시는 하지 않았다.
+- 변경 파일: `public/icons/{icon-192,icon-512,apple-touch-icon}.png`, `public/manifest.webmanifest`, `index.html`, `tests/browser/pages.spec.ts`, `docs/{product-spec,project-structure,progress}.md`.
+
 ## 2026-09-29 첫 화면 기기 알림 상태 안내 제거
 
 - 첫 화면의 미허용·차단·조회 실패 안내와 설정 이동 버튼, 기기 알림 처리 실패 문구를 제거했다. 사용하지 않는 권한 안내 selector도 삭제했다.

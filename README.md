@@ -1,5 +1,7 @@
 # One Slide Timer
 
+시간을 맞추는 가벼운 손짓.
+
 **[바로 사용하기 →](https://logone72.github.io/one-slide-timer/)**
 
 모바일 화면의 세로 시간 레일에서 한 번의 제스처로 여러 타이머를 만들고 조정하는 웹앱입니다.
