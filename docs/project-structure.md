@@ -12,8 +12,8 @@
 ## 확정된 기반
 
 - 패키지 매니저는 `npm`을 쓴다.
-- Node 버전은 `.nvmrc`, `package.json#engines.node`, Vercel 프로젝트 설정 모두 `24`로 맞춘다.
-- 웹 배포는 Vercel을 쓴다. `main` 브랜치는 production 배포, PR은 preview 배포로 둔다.
+- Node 버전은 `.nvmrc`, `package.json#engines.node`, GitHub Actions 실행 환경 모두 `24`로 맞춘다.
+- 웹 배포는 GitHub Pages를 쓴다. `main` 푸시 또는 Deploy Pages 수동 실행(`main` 선택)에서 검사 통과 후 배포한다. PR과 검증 워크플로 수동 실행은 검사만 한다.
 - 앱 표시 이름과 Capacitor `appName`은 `One Slide Timer`로 둔다.
 - Capacitor `appId`와 iOS bundle id는 `com.roegankim.oneslidetimer`로 둔다.
 - 앱 이름은 나중에 바꿀 수 있지만, bundle id는 App Store 배포 전까지 확정하는 값으로 다룬다.
@@ -35,6 +35,7 @@ one-slide-timer/
   ios/
   .husky/
   .github/workflows/verify.yml
+  .github/workflows/deploy.yml
 
   .nvmrc
   index.html
@@ -49,7 +50,7 @@ one-slide-timer/
   package-lock.json
 ```
 
-`ios/`와 `.husky/`는 각각 Capacitor iOS 연결, Husky 초기화 시 생성한다. `android/`는 Android 출시를 실제로 시작할 때 만든다. Vercel은 기본 Vite 정적 배포로 충분하므로 `vercel.json`은 필요한 rewrite나 header가 생길 때만 만든다.
+`ios/`와 `.husky/`는 각각 Capacitor iOS 연결, Husky 초기화 시 생성한다. `android/`는 Android 출시를 실제로 시작할 때 만든다. GitHub Pages에는 `dist/` 정적 빌드를 Actions 아티팩트로 배포한다. `PAGES_BASE_PATH`로 저장소 하위 경로를 지정하며 로컬·네이티브 빌드는 기본 `/`를 유지한다.
 
 ## 소스 구조
 
@@ -214,8 +215,8 @@ src/
 - lint-staged는 staged 파일 전체에 Prettier를 적용하고, JS/TS 파일에만 ESLint fix를 적용한다.
 - 커밋 전 로컬 검증은 `verify` 스크립트를 사용한다.
 - 배포 전 브라우저 검증은 `verify:browser` 스크립트를 사용한다.
-- `.github/workflows/verify.yml`은 PR, `main` 푸시, 수동 실행에서 Node 24로 `npm ci`, Chromium·WebKit 설치, `verify`, `verify:browser`를 실행한다. CI의 브라우저 동시 실행 수는 2개로 제한한다.
-- CI 설정만으로 Vercel 배포가 차단되지는 않는다. GitHub 필수 검사와 Vercel 배포 대기 정책은 외부 설정이며, 적용 여부를 별도로 확인해야 한다.
+- `.github/workflows/verify.yml`은 PR, 수동 실행 또는 재사용 호출에서 Node 24로 `npm ci`, Chromium·WebKit 설치, `verify`, `verify:browser`를 실행한다. CI의 브라우저 동시 실행 수는 2개로 제한한다.
+- Pages용 경로로 다시 빌드한 뒤 경로·manifest·알림 서비스 워커를 검사한다. `deploy.yml`은 `main` 푸시 또는 수동 실행을 지원하며 `main` 브랜치에서만 검증·배포한다. 배포용 호출에서만 `upload-pages: true`로 산출물을 업로드하며 `verify.yml` 재사용 호출의 성공을 요구한다. 배포 job은 검증한 산출물을 사용하고, PR과 수동 검증에서는 실행하지 않는다. Pages Source는 GitHub Actions여야 한다.
 
 커밋 타입은 처음에는 `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`만 허용한다. 타입을 늘리는 일은 실제 커밋 사례가 생긴 뒤에 한다.
 
@@ -248,7 +249,7 @@ src/
 3. ESLint, Prettier, Vitest, Playwright, Husky, lint-staged, commitlint를 붙였다.
 4. `manifest.webmanifest`와 iOS 홈 화면 메타태그를 추가했다.
 5. Capacitor iOS를 연결해 `ios/`를 만들었다.
-6. Vercel 프로젝트 연결과 Node 24 설정은 아직 남아 있다.
+6. 웹 배포는 GitHub Pages로 변경했다. `verify.yml`의 검사·업로드와 `deploy.yml`의 배포 흐름과 README의 배포 절차를 따른다.
 
 ## 금지할 구조
 

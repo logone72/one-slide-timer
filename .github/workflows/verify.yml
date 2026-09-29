@@ -2,8 +2,12 @@ name: Verify
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_call:
+    inputs:
+      upload-pages:
+        description: 검증한 빌드를 Pages 배포용으로 업로드
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
@@ -23,3 +27,14 @@ jobs:
       - run: npm exec -- playwright install --with-deps chromium webkit
       - run: npm run verify
       - run: npm run verify:browser
+      # 전체 기능 검사를 통과한 뒤 실제 배포 경로의 산출물도 검사한다.
+      - name: Build and check Pages
+        env:
+          PAGES_BASE_PATH: /${{ github.event.repository.name }}/
+        run: |
+          npm run build
+          npm run test:browser -- tests/browser/pages.spec.ts --project=desktop-chromium
+      - uses: actions/upload-pages-artifact@v5
+        if: inputs.upload-pages == true && github.ref == 'refs/heads/main'
+        with:
+          path: dist

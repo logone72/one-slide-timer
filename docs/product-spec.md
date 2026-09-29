@@ -163,7 +163,7 @@ Web Worker는 종료 시각 목록을 받아 다음 숫자 변경 시점을 예�
 - Vite + React + TypeScript
 - npm
 - Node 24
-- Vercel 웹 배포
+- GitHub Pages 웹 배포
 - XState로 레일의 제스처·타이머 액션·시간 조정 화면 전환 제어
 - Zustand로 앱 전체 공유 상태와 변경 액션 관리. 앱 인스턴스별 store 하나를 사용한다.
 - Web Worker로 타이머 갱신 신호 처리
@@ -208,7 +208,7 @@ Web Worker는 종료 시각 목록을 받아 다음 숫자 변경 시점을 예�
 알림 권한과 설정의 계약은 [알림 권한과 설정 UI 개발 계획](notification-permissions-plan.md)에 정리한다. 앱 시작 시 조회·안내와 토글 켜기 요청, 공통 토글과 영구 안내 숨김, 권한 조회·요청 분리, 앱 복귀와 예약 취소·복구를 다루며 구현과 자동 검사를 완료했다. iOS 실기기 검증은 남아 있다.
 
 1. 모바일 웹앱 스캐폴딩과 모바일 뷰포트 기준 UI 셸 작성.
-2. Node 24, npm, Vercel, PWA manifest, iOS 홈 화면 메타태그를 설정한다.
+2. Node 24, npm, GitHub Pages, PWA manifest, iOS 홈 화면 메타태그를 설정한다.
 3. ESLint, Prettier, TypeScript strict, Vitest, Playwright, Husky, lint-staged, commitlint를 설정한다.
 4. 종료 시각 기반 카운트다운 타이머 모델과 Web Worker 갱신 신호 구현.
 5. DOM/CSS 시간 레일, 시작 핀, 미리보기 타이머, 놓으면 바로 시작되는 흐름 구현.

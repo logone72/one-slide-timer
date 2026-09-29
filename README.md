@@ -1,5 +1,7 @@
 # One Slide Timer
 
+**[바로 사용하기 →](https://logone72.github.io/one-slide-timer/)**
+
 모바일 화면의 세로 시간 레일에서 한 번의 제스처로 여러 타이머를 만들고 조정하는 웹앱입니다.
 
 <img src="docs/images/timer-preview.png" alt="시간 레일에 두 개의 진행 중인 타이머가 표시된 모바일 화면" width="390" />
@@ -39,6 +41,21 @@ npm run verify:browser
 ```
 
 `verify`는 lint·포맷·타입·단위 테스트를, `verify:browser`는 빌드와 전체 브라우저 검사를 실행합니다. 브라우저 검사는 Chromium, 모바일 WebKit 및 Chromium 터치 환경을 사용하며 실제 iOS 기기 검사를 대신하지 않습니다.
+
+## 웹 배포
+
+GitHub Pages에 배포합니다. 배포 주소는 <https://logone72.github.io/one-slide-timer/>입니다.
+
+저장소 Settings → Pages → Source를 **GitHub Actions**로 설정합니다. `main`에 푸시하면 품질 검사·전체 브라우저 검사·Pages 경로 검사를 통과한 빌드를 자동 배포합니다. `deploy.yml`은 검증 워크플로를 호출하고 성공한 산출물만 배포합니다. PR과 검증 워크플로 수동 실행은 검사만 수행하며 배포하지 않습니다. 수동 배포는 Actions → **Deploy Pages** → **Run workflow**에서 `main`을 선택합니다. 다른 브랜치에서는 배포하지 않습니다. 별도 배포 토큰은 필요하지 않습니다.
+
+Pages 경로를 로컬에서 확인하려면 다음을 실행합니다.
+
+```bash
+PAGES_BASE_PATH=/one-slide-timer/ npm run build
+PAGES_BASE_PATH=/one-slide-timer/ npm run test:browser -- tests/browser/pages.spec.ts --project=desktop-chromium
+```
+
+일반 로컬 실행과 네이티브 빌드는 기본 경로 `/`를 사용합니다.
 
 ## 기술 구성과 문서
 

@@ -22,7 +22,7 @@
 - 완료 알림은 사용자가 확인할 때까지 반복된다. 여러 타이머가 완료되면 하나의 알림에 목록으로 합친다.
 - 웹 배포를 먼저 만들고, 앱스토어 출시는 같은 웹앱을 Capacitor로 감싸는 iOS 앱으로 진행한다.
 - Android는 추가 가능하게 열어두되, 첫 네이티브 폴더는 `ios/`만 만든다.
-- 패키지 매니저는 `npm`, 웹 배포는 Vercel, Node 버전은 `24`로 고정한다.
+- 패키지 매니저는 `npm`, 웹 배포는 GitHub Pages, Node 버전은 `24`로 고정한다.
 - 앱 표시 이름은 `One Slide Timer`, iOS bundle id는 `com.roegankim.oneslidetimer`로 둔다.
 
 ## 구현 기준

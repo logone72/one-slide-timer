@@ -2,6 +2,36 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-29 Pages 배포 리뷰와 이용 링크 추가
+
+- README 상단에 바로 사용하기 링크를 추가했다.
+- 요구사항·저장소 규칙 관점에서 배포 변경을 리뷰했다. 연속 push의 검증 완료 순서에 따라 이전 커밋이 나중에 배포될 수 있어 동시 실행 제어를 워크플로 전체로 옮겼다. 같은 브랜치의 새 실행은 이전 검증·배포를 취소한다.
+- 공식 Pages Actions의 참조 태그와 원격 Pages 설정을 확인했다. 단위 테스트 94개 및 lint·포맷·타입 검사를 통과했다. 앞선 전체 브라우저 85개와 Pages 전용 검사 1개 통과 결과를 유지한다.
+- 변경 파일: `README.md`, `.github/workflows/deploy.yml`, `docs/progress.md`.
+
+## 2026-09-29 배포 워크플로 수동 실행 추가
+
+- Deploy Pages에 수동 실행을 추가했다. 자동·수동 모두 `main`에서 검증 성공 후 배포하며 다른 브랜치는 실행하지 않는다.
+- 재사용 검증의 `upload-pages` 입력은 기본 false다. 배포 워크플로만 true를 전달하므로 Verify 수동 실행은 검사만 수행한다.
+- YAML 구문과 자동·수동 트리거, main 제한, 검증 의존 관계 및 업로드 입력 연결을 검사했다.
+- 변경 파일: `.github/workflows/{deploy,verify}.yml`, `README.md`, `docs/{project-structure,progress}.md`.
+
+## 2026-09-29 배포 트리거를 main push로 한정
+
+- `deploy.yml`을 분리하고 트리거를 `main` push로만 제한했다. 재사용 가능한 `verify.yml`을 호출해 통과한 빌드를 배포한다.
+- 검증 워크플로의 PR·수동 실행에서는 배포하지 않는다. README와 구조 문서의 수동 배포 설명도 정정했다.
+- 변경 파일: `.github/workflows/{verify,deploy}.yml`, `README.md`, `docs/{project-structure,progress}.md`.
+
+## 2026-09-29 GitHub Pages 자동 배포 구성
+
+- 배포 대상을 GitHub Pages로 변경하고 README·제품 스펙·구조 문서·에이전트 지침을 맞췄다. 기존 작업 이력은 유지한다.
+- 기존 verify 워크플로에 Pages 경로 빌드·브라우저 검사·아티팩트 업로드와 배포 job을 연결했다. `main` 푸시 또는 수동 실행의 검사 성공 후에만 배포하며 PR에서는 검사만 한다. 쓰기 권한은 배포 job에만 부여한다.
+- `PAGES_BASE_PATH`로 배포 경로를 지정하고 HTML 자산과 manifest 시작 주소가 이를 따르도록 수정했다. 로컬·네이티브 빌드는 기본 `/` 경로를 유지한다.
+- 원격 CI의 `npm ci` 실패는 잠금 파일에 누락된 `@emnapi/runtime` 때문이었다. CI와 같은 npm 11.19.0으로 복구했으며 기존 의존성 버전은 변경하지 않았다. 깨끗한 임시 폴더의 설치와 Linux x64 dry-run이 통과했다.
+- 검증: `npm run verify`(94개 단위 테스트), 기본 경로 전체 브라우저 검사 85개 통과·3개 제외(Pages 전용 2개와 WebKit 알림 1개), Pages 하위 경로 검사 1개 통과. 타이머 생성·새로고침 복원·manifest 시작 URL·실제 알림 워커 경로를 확인했다.
+- 실제 GitHub 배포는 커밋·푸시 후 확인해야 한다. 이 작업에서는 커밋·푸시·원격 설정 변경을 하지 않았다.
+- 변경 파일: `.github/workflows/verify.yml`, `AGENTS.md`, `README.md`, `docs/{product-spec,project-structure,progress}.md`, `vite.config.ts`, `index.html`, `public/manifest.webmanifest`, `package-lock.json`, `tests/browser/pages.spec.ts`.
+
 ## 2026-09-29 MIT 라이선스 추가
 
 - 사용자 선택에 따라 MIT 라이선스 원문을 추가하고 저작권자를 `2026 Roegan Kim`으로 표기했다. README와 npm 패키지 메타데이터에도 MIT를 명시했다.
