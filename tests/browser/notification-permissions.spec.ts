@@ -63,21 +63,15 @@ test("asks only after confirmation, persists off, and leaves requests alive when
   await expect(prompt).toBeHidden();
 });
 
-test("shows denial and errors separately and recovers through the off switch", async ({
+test("keeps denial and errors off the main screen and recovers through settings", async ({
   page,
 }) => {
   await page.goto(harness);
   await page.getByRole("switch", { name: "기기 알림", exact: true }).click();
   await page.evaluate(() => window.notificationTest.resolveRequest("denied"));
   await page.getByRole("button", { name: "완료", exact: true }).click();
-  await expect(
-    page
-      .getByRole("status")
-      .filter({ hasText: "기기 알림 권한이 차단되어 있어요" })
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "알림 설정 보기", exact: true })
-    .click();
+  await expect(page.locator(".status-notice")).toHaveCount(0);
+  await page.getByRole("button", { name: "설정 열기", exact: true }).click();
   await expect(
     page.getByRole("switch", { name: "기기 알림", exact: true })
   ).not.toBeChecked();
@@ -105,6 +99,9 @@ test("shows denial and errors separately and recovers through the off switch", a
   await expect(
     page.getByRole("switch", { name: "기기 알림", exact: true })
   ).toBeEnabled();
+  await page.getByRole("button", { name: "타이머로 돌아가기" }).click();
+  await expect(page.locator(".status-notice")).toHaveCount(0);
+  await settingsButton.click();
   await page.evaluate(() => {
     window.notificationTest.failCheck = false;
     window.notificationTest.permission = "granted";
@@ -160,7 +157,7 @@ test("missing browser API exposes unsupported system alerts and accessible indep
 });
 
 for (const outcome of ["error", "prompt"] as const) {
-  test(`startup permission ${outcome} offers recovery on the main screen`, async ({
+  test(`startup permission ${outcome} shows no extra notice and can recover in settings`, async ({
     page,
   }) => {
     await page.goto(harness);
@@ -173,12 +170,8 @@ for (const outcome of ["error", "prompt"] as const) {
       }
     }, outcome);
     await page.getByRole("button", { name: "완료", exact: true }).click();
-    await expect(
-      page.getByRole("status").filter({ hasText: "기기 알림 권한" })
-    ).toBeVisible();
-    await page
-      .getByRole("button", { name: "알림 설정 보기", exact: true })
-      .click();
+    await expect(page.locator(".status-notice")).toHaveCount(0);
+    await page.getByRole("button", { name: "설정 열기", exact: true }).click();
     await page.getByRole("switch", { name: "기기 알림", exact: true }).click();
     await page.evaluate(() =>
       window.notificationTest.resolveRequest("granted")

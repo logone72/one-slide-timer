@@ -58,30 +58,6 @@ export const selectAudioEnabled = (state: AppState): boolean =>
 export const needsNotificationSetup = (state: AppState): boolean =>
   !selectNotificationsEnabled(state) || !selectAudioEnabled(state);
 
-export function selectPermissionNotice(state: AppState): string {
-  if (state.settingsOpen) {
-    return "";
-  }
-  const { phase, permission, promptHandled } = state.notifications;
-  if (phase === "error") {
-    return "기기 알림 권한을 확인하지 못했어요. 알림 설정에서 다시 확인해 주세요.";
-  }
-  if (phase !== "idle") {
-    return "";
-  }
-  if (permission === "denied") {
-    return "기기 알림 권한이 차단되어 있어요. 알림 설정에서 허용 방법을 확인해 주세요.";
-  }
-  if (
-    permission === "prompt" &&
-    promptHandled &&
-    state.settings.notificationPreference === false
-  ) {
-    return "기기 알림 권한을 허용하지 않았어요. 알림 설정에서 다시 시도해 주세요.";
-  }
-  return "";
-}
-
 // UI에서 O/X가 잠시 미확정이어도 명시적인 X로 바꾸지 않는다. 조회 중에는 마지막으로
 // 확인된 권한을 유지하며, 새 OS 예약 직전의 재확인은 공통 권한 경로를 다시 거친다.
 export function selectDeliverySnapshot(state: AppState): NotificationSnapshot {

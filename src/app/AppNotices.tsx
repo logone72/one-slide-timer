@@ -1,6 +1,5 @@
 import { StatusNotice } from "@/features/settings/StatusNotice";
 
-import { selectPermissionNotice } from "./state/notificationState";
 import { storageFailed } from "./state/storageState";
 import { useAppActions, useAppStore } from "./useAppState";
 export function AppNotices() {
@@ -10,8 +9,6 @@ export function AppNotices() {
   const timersFailed = useAppStore((state) =>
     storageFailed(state.timerStorage)
   );
-  const permissionNotice = useAppStore(selectPermissionNotice);
-  const notificationFailed = useAppStore((state) => state.notifications.failed);
   const actions = useAppActions();
   return (
     <>
@@ -28,16 +25,6 @@ export function AppNotices() {
           action="타이머 저장 재시도"
           onAction={actions.retryTimerStorage}
         />
-      )}
-      {permissionNotice !== "" && (
-        <StatusNotice
-          message={permissionNotice}
-          action="알림 설정 보기"
-          onAction={actions.openSettings}
-        />
-      )}
-      {notificationFailed && (
-        <StatusNotice message="기기 알림을 처리하지 못했어요. 설정에서 기기 알림을 켜주세요." />
       )}
     </>
   );

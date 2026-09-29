@@ -2,6 +2,12 @@
 
 이 문서는 원 슬라이드 타이머의 진행상황을 계속 이어 쓰기 위한 기록장이다. 새 결정이나 구현이 생기면 최신 항목을 위에 추가한다.
 
+## 2026-09-29 첫 화면 기기 알림 상태 안내 제거
+
+- 첫 화면의 미허용·차단·조회 실패 안내와 설정 이동 버튼, 기기 알림 처리 실패 문구를 제거했다. 사용하지 않는 권한 안내 selector도 삭제했다.
+- 기존 시작 모달·설정 토글의 권한 처리와 저장소 오류 안내는 유지한다. 미허용·차단·조회 실패 후 모달을 닫았을 때 추가 안내가 없고 설정 토글이 OFF인지 브라우저 검사로 확인한다.
+- 변경 파일: `src/app/AppNotices.tsx`, `src/app/state/notificationState.ts`, `tests/browser/notification-permissions.spec.ts`, `docs/{notification-permissions-plan,progress}.md`.
+
 ## 2026-09-29 Pages 배포 리뷰와 이용 링크 추가
 
 - README 상단에 바로 사용하기 링크를 추가했다.
